@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mon patrimoine</title>
+<meta name="theme-color" content="#0E7C86">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EDF1F5; --surface:#FFFFFF; --ink:#13243A; --muted:#5B6B80; --line:#D9E0E8;
+  --accent:#0E7C86; --accent-soft:#D5EEF0; --good:#2F8F5B; --warn:#B8760C; --bad:#C0392B;
+  --good-soft:#DDF1E6; --warn-soft:#F8EBD2; --bad-soft:#F7DFDB; --track:#E3E9F0;
+  --display:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --body:'Public Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1620; --surface:#16212E; --ink:#E8EEF5; --muted:#93A3B8; --line:#26364A;
+    --accent:#3FC1CB; --accent-soft:#12363B; --good:#4CC38A; --warn:#E0A23A; --bad:#F0786B;
+    --good-soft:#143324; --warn-soft:#3A2C12; --bad-soft:#3B1D1A; --track:#243245;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1620; --surface:#16212E; --ink:#E8EEF5; --muted:#93A3B8; --line:#26364A;
+  --accent:#3FC1CB; --accent-soft:#12363B; --good:#4CC38A; --warn:#E0A23A; --bad:#F0786B;
+  --good-soft:#143324; --warn-soft:#3A2C12; --bad-soft:#3B1D1A; --track:#243245;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--display);margin:0;font-weight:700;letter-spacing:-.01em}
+h2{font-size:18px}
+h3{font-size:15px}
+.wrap{max-width:640px;margin:0 auto;padding:14px 16px 110px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;max-width:100%}
+.card.hero{border-radius:20px;padding:20px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.top .ttl{font-family:var(--display);font-size:20px;font-weight:700;text-align:center;flex:1;text-transform:capitalize}
+.ico{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:20px;cursor:pointer;display:grid;place-items:center}
+.ico:focus-visible,.btn:focus-visible,.tabs button:focus-visible,.seg button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stack{display:grid;gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface)}
+.kpi .v{font-family:var(--display);font-size:22px;font-weight:700}
+.kpi .l{font-size:13px;color:var(--muted)}
+.good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+.blocks{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:5px;margin:16px 0 12px}
+.blk{height:26px;border-radius:7px;background:var(--track);overflow:hidden}
+.blk i{display:block;height:100%;background:var(--accent);border-radius:7px 0 0 7px}
+.blk.full i{border-radius:7px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.chip.ok{background:var(--good-soft);border-color:transparent;color:var(--good);font-weight:600}
+.big{font-family:var(--display);font-size:44px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.bar{height:8px;border-radius:99px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.bar i.warn{background:var(--warn)} .bar i.bad{background:var(--bad)} .bar i.good{background:var(--good)}
+.cat{padding:9px 0;border-top:1px solid var(--line)}
+.cat:first-of-type{border-top:0}
+.alert{border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:8px}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+.alert.info{background:var(--accent-soft);color:var(--accent)}
+.alert.good{background:var(--good-soft);color:var(--good)}
+.btn{font:inherit;font-weight:600;border:0;border-radius:12px;padding:12px 16px;background:var(--accent);color:#fff;cursor:pointer;min-height:44px}
+.dark-btn{color:#05252A}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--bad);color:#fff}
+.btn.block{width:100%}
+.btn.sm{padding:8px 12px;min-height:36px;font-size:14px}
+input,select,textarea{font:inherit;font-size:16px;width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+textarea{min-height:90px;resize:vertical}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--track);border-radius:12px;padding:3px;margin-bottom:12px}
+.seg button{font:inherit;font-weight:600;border:0;background:transparent;color:var(--muted);padding:10px;border-radius:10px;cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.tx{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.tx:first-child{border-top:0}
+.tx .m{min-width:0}
+.tx .m b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx .a{font-weight:600;white-space:nowrap}
+.edit{padding:10px 0;border-top:1px solid var(--line);display:grid;gap:8px}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.tabs div{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{font:inherit;font-size:12px;border:0;background:transparent;color:var(--muted);padding:9px 4px 8px;display:grid;justify-items:center;gap:3px;cursor:pointer}
+.tabs button.on{color:var(--accent);font-weight:600}
+.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:14px;z-index:9;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.empty{text-align:center;padding:14px 6px;color:var(--muted)}
+.scroll{overflow-x:auto}
+@media (prefers-reduced-motion: reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<nav class="tabs"><div>
+  <button data-t="home" onclick="go('home')"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Accueil</button>
+  <button data-t="entry" onclick="go('entry')"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Saisie</button>
+  <button data-t="goals" onclick="go('goals')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Objectifs</button>
+  <button data-t="settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Réglages</button>
+</div></nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- Constantes ---------- */
+const KEY = 'patrimoine-foyer-v1';
+const CATS = [
+  {id:'logement', name:'Logement', budget:1122, flex:false},
+  {id:'factures', name:'Électricité & internet', budget:93, flex:false},
+  {id:'assurances', name:'Assurances', budget:107, flex:false},
+  {id:'courses', name:'Courses', budget:433, flex:true},
+  {id:'transport', name:'Essence & transport', budget:75, flex:true},
+  {id:'credits', name:'Crédits', budget:527, flex:false},
+  {id:'abos', name:'Abonnements', budget:39, flex:false},
+  {id:'bebe', name:'Bébé', budget:0, flex:true},
+  {id:'sante', name:'Santé', budget:0, flex:true},
+  {id:'loisirs', name:'Loisirs & sorties', budget:0, flex:true},
+  {id:'autres', name:'Autres', budget:0, flex:true}
+];
+const GOALS = {urgence:"Fonds d'urgence", apport:'Apport immobilier', libre:'Épargne libre'};
+const TEMPLATE_IN = [
+  {label:'Mon salaire', amount:2400, kind:'fixe'},
+  {label:'Congé maternité (conjointe)', amount:1200, kind:'fixe'}
+];
+const TEMPLATE_OUT = [
+  ['Loyer',1122,'logement'],['Électricité',67,'factures'],['Internet',26,'factures'],
+  ['Assurance habitation',37,'assurances'],['Assurance auto',70,'assurances'],
+  ['Courses (4 semaines)',433,'courses'],['Essence',75,'transport'],
+  ['Crédit auto',314,'credits'],['Crédit conso',213,'credits'],
+  ['Abonnement IA',22,'abos'],['Musique',6,'abos'],['Amazon Prime',11,'abos']
+];
+const KEYWORDS = [
+  ['logement',['loyer','agence immo','foncia','nexity']],
+  ['factures',['edf','engie','totalenergies','electricite','free ','orange','sfr','bouygues','internet']],
+  ['assurances',['assurance','maif','matmut','axa','macif','groupama','allianz']],
+  ['courses',['carrefour','leclerc','auchan','lidl','intermarche','monoprix','franprix','casino','aldi','courses']],
+  ['transport',['esso','shell','carburant','essence','station','peage','sncf','navigo']],
+  ['credits',['credit','pret ','cetelem','cofidis','sofinco','franfinance','cetelem']],
+  ['abos',['spotify','netflix','prime','deezer','openai','anthropic','claude','chatgpt','disney','canal']],
+  ['sante',['pharmacie','medecin','docteur','mutuelle','dentiste','optique']],
+  ['bebe',['pampers','creche','nounou','bebe','vertbaudet','orchestra']],
+  ['loisirs',['restaurant','resto','cinema','uber eats','deliveroo','mcdo','mcdonald','bar ']]
+];
+
+/* ---------- Utilitaires ---------- */
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,'0');
+const now = new Date();
+const curKey = now.getFullYear()+'-'+pad(now.getMonth()+1);
+const uid = () => Math.random().toString(36).slice(2,9);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const n = parseFloat(String(v).replace(/[\s\u00a0]/g,'').replace(',','.')); return isNaN(n)?0:n; };
+const eur = n => (n==null||isNaN(n)) ? '—' : new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+const fmt1 = n => n.toLocaleString('fr-FR',{maximumFractionDigits:1});
+const sum = a => a.reduce((s,t)=>s+(t.amount||0),0);
+const monthLabel = k => { const [y,m]=k.split('-').map(Number); return new Date(y,m-1,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'}); };
+const shiftKey = (k,d) => { const [y,m]=k.split('-').map(Number); const dt=new Date(y,m-1+d,1); return dt.getFullYear()+'-'+pad(dt.getMonth()+1); };
+const monthsBetween = (a,b) => { const [y1,m1]=a.split('-').map(Number), [y2,m2]=b.split('-').map(Number); return (y2-y1)*12+(m2-m1); };
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+
+/* ---------- Données ---------- */
+let storageOK = true;
+function defaults(){
+  return {
+    v:1,
+    settings:{depRef:2396, urgenceMois:6, epargneObj:700, apportCible:0, apportDate:shiftKey(curKey,18), tauxLivret:0},
+    budgets:Object.fromEntries(CATS.map(c=>[c.id,c.budget])),
+    accounts:[{id:'a1',name:'Épargne actuelle',goal:'urgence'}],
+    debts:[{id:'d1',name:'Crédit auto',mensualite:314,taux:0,initial:0},{id:'d2',name:'Crédit conso',mensualite:213,taux:0,initial:0}],
+    months:{[curKey]:{tx:[],balances:{a1:1500},debts:{}}}
+  };
+}
+function readLocal(){
+  try{
+    const r = localStorage.getItem(KEY);
+    if(r){ const o = JSON.parse(r); const d = defaults(); return Object.assign(d,o,{settings:Object.assign(d.settings,o.settings||{}),budgets:Object.assign(d.budgets,o.budgets||{})}); }
+  }catch(e){ storageOK = false; }
+  return null;
+}
+let S = defaults();
+let DB=null, mode='loading', ready=false, canWrite=null, isOwner=false, writeErr=false, tsSeq=0, pendingRender=false;
+let cfgDoc=null, txDocs=[], snapDocs={}, loaded={cfg:false,tx:false,snaps:false};
+const clean = o => JSON.parse(JSON.stringify(o));
+let chain = Promise.resolve();
+function enqueue(fn){
+  chain = chain.then(fn).catch(()=>{ writeErr=true; toast("Écriture refusée : vérifie ton droit de contribuer"); });
+  return chain;
+}
+function persistConfig(){
+  const c = clean({settings:S.settings,budgets:S.budgets,accounts:S.accounts,debts:S.debts});
+  enqueue(()=>DB.doc('foyer/config').set(c));
+}
+function save(){
+  if(DB){ persistConfig(); return; }
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ storageOK = false; }
+}
+function putTx(k,t){
+  t.month=k; if(!t.ts) t.ts=Date.now()+(tsSeq++);
+  const m=getM(k), i=m.tx.findIndex(x=>x.id===t.id);
+  if(i>=0) m.tx[i]=t; else m.tx.push(t);
+  if(DB){ const body=clean(t); enqueue(()=>DB.collection('tx').doc(t.id).set(body)); }
+}
+function removeTx(k,id){
+  const m=getM(k); m.tx=m.tx.filter(x=>x.id!==id);
+  if(DB) enqueue(()=>DB.collection('tx').doc(id).delete());
+}
+function putSnap(k){
+  const m=getM(k);
+  if(DB){ const body=clean({balances:m.balances,debts:m.debts}); enqueue(()=>DB.doc('snaps/'+k).set(body)); }
+}
+function afterWrite(msg,clear){ if(!DB) save(); render({clear:!!clear}); if(msg) toast(msg); }
+function pushAll(src){
+  S=src; persistConfig();
+  Object.keys(src.months).forEach(k=>{
+    const m=src.months[k];
+    if(Object.keys(m.balances||{}).length||Object.keys(m.debts||{}).length) putSnap(k);
+    (m.tx||[]).forEach(t=>putTx(k,t));
+  });
+}
+function rebuild(){
+  const base=defaults(), c=cfgDoc?clean(cfgDoc):{};
+  S={v:1,settings:Object.assign(base.settings,c.settings||{}),budgets:Object.assign(base.budgets,c.budgets||{}),accounts:c.accounts||base.accounts,debts:c.debts||base.debts,months:{}};
+  txDocs.forEach(t=>{ if(t.month) getM(t.month).tx.push(t); });
+  Object.keys(snapDocs).forEach(k=>{ const m=getM(k), v=snapDocs[k]; m.balances=v.balances||{}; m.debts=v.debts||{}; });
+  Object.values(S.months).forEach(m=>m.tx.sort((a,b)=>(a.ts||0)-(b.ts||0)));
+  getM(curKey);
+}
+function isEditing(){ const a=document.activeElement; return !!(a && a.closest && a.closest('#app') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); }
+function softRender(){ if(isEditing()) pendingRender=true; else render(); }
+document.addEventListener('focusout',()=>{ if(pendingRender) setTimeout(()=>{ if(pendingRender && !isEditing()) render(); },400); });
+function refresh(){
+  if(!(loaded.cfg&&loaded.tx&&loaded.snaps)) return;
+  ready=true; rebuild(); softRender();
+}
+let FBref=null, userEmail='', subscribed=false, fbErr='';
+function dbFail(e){
+  if(e && e.code==='permission-denied'){ mode='denied'; render(); }
+  else toast('Synchronisation interrompue');
+}
+function whenFB(){ return window.FB!==undefined ? Promise.resolve(window.FB) : new Promise(r=>window.addEventListener('fb-ready',()=>r(window.FB),{once:true})); }
+async function startDb(){
+  const FB = await Promise.race([whenFB(), new Promise(r=>setTimeout(()=>r(null),12000))]);
+  if(!FB){
+    mode='error';
+    fbErr = window.FBERR==='config' ? "Configuration Firebase manquante : colle ta configuration en haut du script dans index.html (voir GUIDE.md)." : "Firebase n'a pas pu démarrer. Vérifie ta connexion internet.";
+    render(); return;
+  }
+  FBref=FB;
+  FB.onAuth(user=>{
+    if(!user){ mode='login'; render(); return; }
+    userEmail=user.email||''; mode='db'; DB=FB.adapter; canWrite=true; isOwner=true;
+    render();
+    if(subscribed) return;
+    subscribed=true;
+    DB.doc('foyer/config').onSnapshot(sn=>{ cfgDoc=sn.exists?sn.data():null; loaded.cfg=true; refresh(); }, dbFail);
+    DB.collection('tx').onSnapshot(sn=>{ txDocs=sn.docs.map(d=>Object.assign({},d.data(),{id:d.id})); loaded.tx=true; refresh(); }, dbFail);
+    DB.collection('snaps').onSnapshot(sn=>{ snapDocs={}; sn.docs.forEach(d=>{ snapDocs[d.id]=d.data(); }); loaded.snaps=true; refresh(); }, dbFail);
+  });
+}
+async function doSignIn(){ try{ await FBref.signIn(); }catch(e){ toast('Connexion annulée ou refusée'); } }
+function doSignOut(){ FBref.signOut().then(()=>location.reload()); }
+function centerCard(title,body,btn){ return `<div class="card hero" style="margin-top:40px"><h2>${title}</h2><p class="muted" style="margin:10px 0 16px">${body}</p>${btn||''}</div>`; }
+function setupView(){
+  return `<div class="card hero" style="margin-top:20px"><h2>Espace du foyer</h2>
+    <p class="muted" style="margin:10px 0 16px">Connecté avec ${esc(userEmail)}. Premier lancement : crée l'espace partagé. Toi et ta femme verrez les mêmes chiffres.</p>
+    <div class="stack"><button class="btn block" onclick="setupFrom('default')">Partir des valeurs de départ</button>
+    <div><label for="rs0">Ou colle la sauvegarde de l'ancienne version</label><textarea id="rs0" placeholder="Réglages > Copier ma sauvegarde, dans l'ancienne app"></textarea></div>
+    <button class="btn ghost block" onclick="setupFromBackup()">Importer cette sauvegarde</button></div>
+    <p class="small muted" style="margin:14px 0 0">À faire une seule fois, par l'un de vous deux.</p></div>`;
+}
+function setupFrom(){ pushAll(defaults()); toast("Création de l'espace partagé…"); }
+function setupFromBackup(){
+  try{
+    const o=JSON.parse($('#rs0').value); if(!o||!o.months||!o.settings) throw new Error();
+    const d=defaults(); pushAll(Object.assign(d,o,{settings:Object.assign(d.settings,o.settings),budgets:Object.assign(d.budgets,o.budgets||{})}));
+    toast('Import en cours…');
+  }catch(e){ toast('Sauvegarde invalide'); }
+}
+
+function getM(k){ if(!S.months[k]) S.months[k]={tx:[],balances:{},debts:{}}; const m=S.months[k]; m.tx=m.tx||[]; m.balances=m.balances||{}; m.debts=m.debts||{}; return m; }
+function snap(kind,k){
+  const keys = Object.keys(S.months).filter(x=>x<=k && Object.keys(S.months[x][kind]||{}).length).sort();
+  return keys.length ? S.months[keys[keys.length-1]][kind] : {};
+}
+function hasOwnSnap(k){ return !!(S.months[k] && Object.keys(S.months[k].balances||{}).length); }
+function totalBal(bal){ return S.accounts.reduce((s,a)=>s+(+bal[a.id]||0),0); }
+function netWorth(k){
+  const bal = S.months[k].balances||{}; const d = snap('debts',k);
+  return totalBal(bal) - S.debts.reduce((s,x)=>s+(+d[x.id]||0),0);
+}
+function calc(k){
+  const m = getM(k);
+  const inc = m.tx.filter(t=>t.type==='in'), out = m.tx.filter(t=>t.type==='out');
+  const byCat = {}; out.forEach(t=>{ byCat[t.cat]=(byCat[t.cat]||0)+t.amount; });
+  const bal = snap('balances',k), debts = snap('debts',k);
+  const goalSum = g => S.accounts.filter(a=>a.goal===g).reduce((s,a)=>s+(+bal[a.id]||0),0);
+  const rev = sum(inc), revFixe = sum(inc.filter(t=>t.kind!=='variable')), dep = sum(out);
+  // épargne réelle = variation des soldes entre ce mois et le précédent relevé
+  let saved = null;
+  if(hasOwnSnap(k)){
+    const prev = Object.keys(S.months).filter(x=>x<k && Object.keys(S.months[x].balances||{}).length).sort().pop();
+    if(prev) saved = totalBal(S.months[k].balances) - totalBal(S.months[prev].balances);
+  }
+  const mens = S.debts.reduce((s,d)=>s+(+d.mensualite||0),0);
+  return {m,rev,revFixe,dep,byCat,bal,debts,urgence:goalSum('urgence'),apport:goalSum('apport'),saved,mens,
+          reste:rev-dep, endet: (revFixe||rev)>0 ? mens/(revFixe||rev) : null};
+}
+
+/* ---------- Calculs de crédit ---------- */
+function nPay(B,rate,P){
+  const r = rate/100/12;
+  if(B<=0) return 0;
+  if(P<=0) return Infinity;
+  if(r===0) return B/P;
+  if(P<=r*B) return Infinity;
+  return -Math.log(1-r*B/P)/Math.log(1+r);
+}
+function interestLeft(B,rate,P){ const n=nPay(B,rate,P); return isFinite(n)? Math.max(0,n*P-B) : NaN; }
+
+/* ---------- UI state ---------- */
+const ui = {tab:'home', month:curKey, type:'out', edit:null, reset:false, simX:1000};
+function go(t){ ui.tab=t; ui.edit=null; render(); window.scrollTo(0,0); }
+function shiftM(d){ ui.month = shiftKey(ui.month,d); ui.edit=null; render(); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1800); }
+
+/* ---------- Rendu : pièces communes ---------- */
+function topbar(){
+  return `<div class="top">
+    <button class="ico" onclick="shiftM(-1)" aria-label="Mois précédent">‹</button>
+    <div class="ttl">${monthLabel(ui.month)}</div>
+    <button class="ico" onclick="shiftM(1)" aria-label="Mois suivant">›</button>
+  </div>`;
+}
+function banner(){
+  return writeErr ? `<div class="alert bad">Une écriture a été refusée. Vérifie ta connexion et que ton e-mail est autorisé.</div>` : '';
+}
+function catName(id){ const c=CATS.find(c=>c.id===id); return c?c.name:'Autres'; }
+
+/* ---------- Accueil ---------- */
+function alerts(k,c){
+  const a = [];
+  CATS.forEach(cat=>{
+    const b = +S.budgets[cat.id]||0, s = c.byCat[cat.id]||0;
+    if(b>0 && s>b) a.push({l:'bad',t:`${cat.name} : ${eur(s-b)} au-dessus du budget`});
+    else if(b>0 && cat.flex && s>=0.9*b) a.push({l:'warn',t:`${cat.name} : ${Math.round(s/b*100)} % du budget déjà utilisé`});
+  });
+  if(c.rev>0 && k<curKey && c.reste < S.settings.epargneObj) a.push({l:'warn',t:`Reste du mois ${eur(c.reste)}, sous ton objectif d'épargne de ${eur(S.settings.epargneObj)}`});
+  if(k<=curKey && !hasOwnSnap(k)) a.push({l:'info',t:`Soldes de fin de mois non enregistrés : 1 minute dans l'onglet Saisie`});
+  if(c.endet!=null && c.endet>0.35) a.push({l:'warn',t:`Taux d'endettement à ${Math.round(c.endet*100)} % : au-dessus du seuil bancaire usuel de 35 %`});
+  return a;
+}
+function home(){
+  const k=ui.month, c=calc(k), s=S.settings;
+  const months = s.depRef>0 ? c.urgence/s.depRef : 0;
+  const N = Math.max(1,Math.round(s.urgenceMois));
+  const blocks = Array.from({length:N},(_,i)=>{ const f=clamp(months-i,0,1); return `<div class="blk ${f>=1?'full':''}"><i style="width:${f*100}%"></i></div>`; }).join('');
+  const marks = [...new Set([1,Math.min(3,N),N])].sort((a,b)=>a-b);
+  const chips = marks.map(m=>`<span class="chip ${months>=m?'ok':''}">${m} mois · ${eur(m*s.depRef)}</span>`).join('');
+  const next = marks.find(m=>months<m);
+  const nextTxt = next ? `Prochain palier : ${next} mois, il manque ${eur(next*s.depRef-c.urgence)}.` : `Fonds d'urgence complet. Bravo.`;
+  const resteCls = c.reste>=s.epargneObj ? 'good' : c.reste>=0 ? 'warn' : 'bad';
+  const al = alerts(k,c);
+  const catRows = CATS.filter(x=>(+S.budgets[x.id]||0)>0 || (c.byCat[x.id]||0)>0).map(x=>{
+    const b=+S.budgets[x.id]||0, sp=c.byCat[x.id]||0, p=b>0?sp/b:0;
+    const cls = b>0 ? (sp>b?'bad':(x.flex&&p>=0.9?'warn':'')) : '';
+    return `<div class="cat"><div class="row"><span>${x.name}</span><span class="num ${cls}">${eur(sp)}${b>0?` <span class="muted small">/ ${eur(b)}</span>`:' <span class="muted small">non budgété</span>'}</span></div>
+      ${b>0?`<div class="bar" style="margin-top:6px"><i class="${cls}" style="width:${clamp(p,0,1)*100}%"></i></div>`:''}</div>`;
+  }).join('');
+  const nw = S.months[k] && hasOwnSnap(k) ? netWorth(k) : null;
+  return `${banner()}${topbar()}
+  <div class="card hero">
+    <h2>Fonds d'urgence</h2>
+    <div class="row" style="align-items:flex-end;margin-top:12px">
+      <div><span class="big num">${fmt1(months)}</span> <span class="muted">/ ${N} mois de dépenses</span></div>
+    </div>
+    <div class="blocks" style="--n:${N}" aria-label="Fonds d'urgence : ${fmt1(months)} mois sur ${N}">${blocks}</div>
+    <div class="row small muted" style="margin-bottom:10px"><span class="num">${eur(c.urgence)} mis de côté</span><span class="num">cible ${eur(N*s.depRef)}</span></div>
+    <div class="chips">${chips}</div>
+    <p class="small muted" style="margin:12px 0 0">${nextTxt}</p>
+  </div>
+  ${al.length?`<div>${al.map(x=>`<div class="alert ${x.l}">${esc(x.t)}</div>`).join('')}</div>`:''}
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="kpi"><div class="l">Revenus</div><div class="v num">${eur(c.rev)}</div></div>
+    <div class="kpi"><div class="l">Dépenses</div><div class="v num">${eur(c.dep)}</div></div>
+    <div class="kpi"><div class="l">Reste du mois</div><div class="v num ${c.rev>0?resteCls:''}">${eur(c.reste)}</div></div>
+    <div class="kpi"><div class="l">Taux d'épargne</div><div class="v num">${c.rev>0?Math.round(c.reste/c.rev*100)+' %':'—'}</div></div>
+  </div>
+  ${c.rev>0?`<p class="small muted" style="margin:-4px 4px 12px">Sans la part variable, le mois serait à <b class="num ${c.revFixe-c.dep>=0?'good':'bad'}">${eur(c.revFixe-c.dep)}</b>. Le variable est un bonus : le budget fixe doit tenir sans.</p>`:''}
+  <div class="card">
+    <h2 style="margin-bottom:6px">Budget du mois</h2>
+    ${catRows || `<div class="empty">Aucune dépense saisie ce mois-ci.<br><button class="btn sm" style="margin-top:10px" onclick="go('entry')">Saisir mon mois</button></div>`}
+  </div>
+  <div class="card">
+    <div class="row"><h2>Patrimoine net</h2><b class="num">${nw==null?'—':eur(nw)}</b></div>
+    <p class="small muted" style="margin:4px 0 8px">Épargne moins crédits restants à rembourser.</p>
+    ${chart()}
+  </div>`;
+}
+function chart(){
+  const pts = Object.keys(S.months).filter(hasOwnSnap).sort().map(k=>({k,v:netWorth(k)}));
+  if(pts.length<2) return `<div class="empty small">La courbe apparaît dès que tu as enregistré les soldes de 2 mois différents.</div>`;
+  const W=320,H=120,pd=16; const vs=pts.map(p=>p.v); let min=Math.min(...vs), max=Math.max(...vs); if(min===max){min-=1;max+=1;}
+  const x=i=>pd+(W-2*pd)*i/(pts.length-1), y=v=>H-pd-(H-2*pd)*(v-min)/(max-min);
+  const d = pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p.v).toFixed(1)).join(' ');
+  const dots = pts.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3.5" fill="var(--accent)"/>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Évolution du patrimoine net"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}</svg>
+  <div class="row small muted"><span>${monthLabel(pts[0].k)} · ${eur(pts[0].v)}</span><span>${monthLabel(pts[pts.length-1].k)} · ${eur(pts[pts.length-1].v)}</span></div>`;
+}
+
+/* ---------- Saisie ---------- */
+function txRow(t){
+  if(ui.edit===t.id){
+    const sel = t.type==='out'
+      ? `<select id="e_sel">${CATS.map(c=>`<option value="${c.id}" ${c.id===t.cat?'selected':''}>${c.name}</option>`).join('')}</select>`
+      : `<select id="e_sel"><option value="fixe" ${t.kind!=='variable'?'selected':''}>Revenu fixe</option><option value="variable" ${t.kind==='variable'?'selected':''}>Revenu variable</option></select>`;
+    return `<div class="edit">
+      <input id="e_lab" value="${esc(t.label)}" aria-label="Libellé">
+      <div class="grid2"><input id="e_amt" inputmode="decimal" value="${t.amount}" aria-label="Montant">${sel}</div>
+      <div class="row"><button class="btn danger sm" onclick="delTx('${t.id}')">Supprimer</button><span><button class="btn ghost sm" onclick="ui.edit=null;render()">Annuler</button> <button class="btn sm" onclick="saveEdit('${t.id}')">Enregistrer</button></span></div>
+    </div>`;
+  }
+  const sub = t.type==='out' ? catName(t.cat) : (t.kind==='variable'?'Variable':'Fixe');
+  return `<div class="tx" onclick="ui.edit='${t.id}';render()"><div class="m"><b>${esc(t.label)}</b><span class="small muted">${sub}</span></div><span class="a num ${t.type==='in'?'good':''}">${t.type==='in'?'+':'−'}${eur(t.amount)}</span></div>`;
+}
+function entry(){
+  const k=ui.month, m=getM(k), c=calc(k);
+  const prevK = shiftKey(k,-1), prevHas = S.months[prevK] && S.months[prevK].tx && S.months[prevK].tx.length;
+  const bal = snap('balances',k), debts = snap('debts',k);
+  const ins = m.tx.filter(t=>t.type==='in'), outs = m.tx.filter(t=>t.type==='out');
+  const starters = m.tx.length ? '' : `<div class="card"><h3>Démarrer vite</h3><p class="small muted" style="margin:4px 0 12px">Pré-remplis le mois, puis ajuste seulement ce qui change.</p>
+    <div class="stack">${prevHas?`<button class="btn block" onclick="copyPrev()">Reprendre ${monthLabel(prevK)}</button>`:''}
+    <button class="btn ${prevHas?'ghost':''} block" onclick="applyTemplate()">Charger mes charges fixes habituelles</button></div></div>`;
+  return `${banner()}${topbar()}
+  ${starters}
+  <div class="card">
+    <h2 style="margin-bottom:12px">Ajouter un mouvement</h2>
+    <div class="seg"><button id="sOut" class="${ui.type==='out'?'on':''}" onclick="setType('out')">Dépense</button><button id="sIn" class="${ui.type==='in'?'on':''}" onclick="setType('in')">Revenu</button></div>
+    <div class="stack">
+      <div><label for="f_amt">Montant (€)</label><input id="f_amt" inputmode="decimal" placeholder="0"></div>
+      <div id="catWrap" style="display:${ui.type==='out'?'block':'none'}"><label for="f_cat">Catégorie</label><select id="f_cat">${CATS.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></div>
+      <div id="kindWrap" style="display:${ui.type==='in'?'block':'none'}"><label for="f_kind">Type de revenu</label><select id="f_kind"><option value="fixe">Fixe (salaire, indemnités)</option><option value="variable">Variable (prime, commissions)</option></select></div>
+      <div><label for="f_lab">Libellé (facultatif)</label><input id="f_lab" placeholder="Ex. Courses Lidl"></div>
+      <button class="btn block" onclick="addTx()">Ajouter</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="row"><h2>Revenus</h2><b class="num good">${eur(c.rev)}</b></div>
+    ${ins.length?ins.map(txRow).join(''):'<div class="empty small">Aucun revenu saisi.</div>'}
+  </div>
+  <div class="card">
+    <div class="row"><h2>Dépenses</h2><b class="num">${eur(c.dep)}</b></div>
+    ${outs.length?outs.map(txRow).join(''):'<div class="empty small">Aucune dépense saisie.</div>'}
+    ${m.tx.length?'<p class="small muted" style="margin:8px 0 0">Touche une ligne pour la modifier ou la supprimer.</p>':''}
+  </div>
+  <div class="card">
+    <h2>Soldes de fin de mois</h2>
+    <p class="small muted" style="margin:4px 0 12px">${hasOwnSnap(k)?'Soldes enregistrés pour ce mois.':'Pré-rempli avec les derniers soldes connus : corrige ce qui a changé.'}</p>
+    <div class="stack">
+      ${S.accounts.map(a=>`<div><label for="bal_${a.id}">${esc(a.name)} <span class="small">(${GOALS[a.goal]})</span></label><input id="bal_${a.id}" inputmode="decimal" value="${bal[a.id]!=null?bal[a.id]:''}" placeholder="0"></div>`).join('')}
+      ${S.debts.map(d=>`<div><label for="debt_${d.id}">${esc(d.name)} : capital restant dû</label><input id="debt_${d.id}" inputmode="decimal" value="${debts[d.id]!=null?debts[d.id]:''}" placeholder="À renseigner"></div>`).join('')}
+      <button class="btn block" onclick="saveSoldes()">Enregistrer les soldes</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Importer un export bancaire (CSV)</h2>
+    <p class="small muted" style="margin:4px 0 12px">Colonnes reconnues : date, libellé, montant (ou débit / crédit). Les montants négatifs deviennent des dépenses. Retire d'abord les virements entre tes comptes. Les lignes déjà importées sont ignorées.</p>
+    <div class="stack">
+      <input type="file" id="csvFile" accept=".csv,.txt" onchange="readFile(this)">
+      <textarea id="csvText" placeholder="Ou colle ici le contenu du CSV"></textarea>
+      <button class="btn ghost block" onclick="importCSV()">Importer</button>
+    </div>
+  </div>`;
+}
+function setType(t){
+  ui.type=t;
+  $('#sOut').classList.toggle('on',t==='out'); $('#sIn').classList.toggle('on',t==='in');
+  $('#catWrap').style.display = t==='out'?'block':'none';
+  $('#kindWrap').style.display = t==='in'?'block':'none';
+}
+function addTx(){
+  const amt = num($('#f_amt').value);
+  if(amt<=0){ toast('Entre un montant supérieur à 0'); return; }
+  const m = getM(ui.month);
+  const t = {id:uid(), type:ui.type, amount:amt, label:$('#f_lab').value.trim()};
+  if(ui.type==='out'){ t.cat=$('#f_cat').value; if(!t.label) t.label=catName(t.cat); }
+  else { t.kind=$('#f_kind').value; if(!t.label) t.label = t.kind==='variable'?'Revenu variable':'Revenu fixe'; }
+  putTx(ui.month,t); afterWrite('Ajouté',true);
+}
+function saveEdit(id){
+  const t = getM(ui.month).tx.find(x=>x.id===id); if(!t) return;
+  const a = num($('#e_amt').value); if(a<=0){ toast('Montant invalide'); return; }
+  t.amount=a; t.label=$('#e_lab').value.trim()||t.label;
+  if(t.type==='out') t.cat=$('#e_sel').value; else t.kind=$('#e_sel').value;
+  putTx(ui.month,t); ui.edit=null; afterWrite('Modifié');
+}
+function delTx(id){ removeTx(ui.month,id); ui.edit=null; afterWrite('Supprimé'); }
+function applyTemplate(){
+  const k=ui.month;
+  TEMPLATE_IN.forEach(t=>putTx(k,{id:uid(),type:'in',...t}));
+  TEMPLATE_OUT.forEach(([label,amount,cat])=>putTx(k,{id:uid(),type:'out',label,amount,cat}));
+  afterWrite('Charges fixes chargées');
+}
+function copyPrev(){
+  const p=getM(shiftKey(ui.month,-1));
+  p.tx.slice().forEach(t=>putTx(ui.month,{...t,id:uid(),ts:0}));
+  afterWrite('Mois précédent repris');
+}
+function saveSoldes(){
+  const m=getM(ui.month);
+  S.accounts.forEach(a=>{ const el=$('#bal_'+a.id); if(el) m.balances[a.id]=num(el.value); });
+  S.debts.forEach(d=>{ const el=$('#debt_'+d.id); if(el && el.value.trim()!=='') m.debts[d.id]=num(el.value); });
+  putSnap(ui.month); afterWrite('Soldes enregistrés');
+}
+
+/* ---------- Import CSV ---------- */
+function readFile(inp){
+  const f=inp.files&&inp.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ $('#csvText').value=r.result; toast('Fichier chargé'); }; r.readAsText(f);
+}
+function parseAmount(s){
+  if(s==null) return null; s=String(s).replace(/[\s\u00a0€]/g,'').replace('−','-'); if(!s) return null;
+  if(/,\d{1,2}$/.test(s)) s=s.replace(/\./g,'').replace(',','.'); else s=s.replace(/,/g,'');
+  const n=parseFloat(s); return isNaN(n)?null:n;
+}
+function parseDateKey(s){
+  s=String(s||'').trim(); let m;
+  if((m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/))) return m[3]+'-'+pad(+m[2]);
+  if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return m[1]+'-'+m[2];
+  return null;
+}
+function guessCat(label){
+  const l=' '+label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')+' ';
+  for(const [cat,words] of KEYWORDS){ if(words.some(w=>l.includes(w))) return cat; }
+  return 'autres';
+}
+function importCSV(){
+  const text=$('#csvText').value; const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2){ toast('Colle un CSV avec une ligne d\'en-tête'); return; }
+  const sep=(lines[0].match(/;/g)||[]).length>=(lines[0].match(/,/g)||[]).length?';':',';
+  const split=l=>{ const out=[]; let cur='',q=false; for(const ch of l){ if(ch==='"') q=!q; else if(ch===sep&&!q){out.push(cur);cur='';} else cur+=ch; } out.push(cur); return out.map(s=>s.trim()); };
+  const head=split(lines[0]).map(h=>h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+  const find=(...ks)=>head.findIndex(h=>ks.some(k=>h.includes(k)));
+  const iD=find('date'), iL=find('libell','label','description','intitul','detail'), iM=find('montant','amount'), iDeb=find('debit'), iCre=find('credit');
+  if(iL<0 || (iM<0 && iDeb<0 && iCre<0)){ toast('Colonnes libellé / montant introuvables'); return; }
+  let added=0, skipped=0;
+  lines.slice(1).forEach(line=>{
+    const r=split(line);
+    let amt = iM>=0 ? parseAmount(r[iM]) : ((parseAmount(r[iCre])||0) - Math.abs(parseAmount(r[iDeb])||0));
+    if(amt==null || amt===0) return;
+    const label=(r[iL]||'Sans libellé').slice(0,60);
+    const date=iD>=0?r[iD]:'';
+    const key=parseDateKey(date)||ui.month;
+    const m=getM(key);
+    const type=amt<0?'out':'in', a=Math.abs(amt);
+    if(m.tx.some(t=>t.type===type&&t.amount===a&&t.label===label&&t.date===date)){ skipped++; return; }
+    const t={id:uid(),type,amount:a,label,date};
+    if(type==='out') t.cat=guessCat(label); else t.kind='fixe';
+    putTx(key,t); added++;
+  });
+  afterWrite(`${added} lignes importées${skipped?`, ${skipped} déjà présentes`:''}`,true);
+}
+
+/* ---------- Objectifs ---------- */
+function goals(){
+  const k=ui.month, c=calc(k), s=S.settings;
+  const target=s.apportCible, pApport = target>0 ? clamp(c.apport/target,0,1) : 0;
+  const mLeft = s.apportDate ? monthsBetween(k,s.apportDate) : 0;
+  const need = target>0 && mLeft>0 ? Math.max(0,(target-c.apport)/mLeft) : null;
+  const apportCard = `<div class="card">
+    <h2>Apport immobilier</h2>
+    ${target>0?`
+      <div class="row" style="margin:10px 0 8px"><b class="num">${eur(c.apport)}</b><span class="muted num">sur ${eur(target)}</span></div>
+      <div class="bar"><i class="good" style="width:${pApport*100}%"></i></div>
+      <p class="small muted" style="margin:10px 0 0">${need!=null?`Pour atteindre la cible en ${monthLabel(s.apportDate)}, il faut mettre de côté environ <b class="num">${eur(need)}</b> par mois.`:'Date cible atteinte ou non définie.'}</p>`
+    :`<p class="small muted" style="margin:6px 0 0">Définis ta cible dans Réglages. Elle doit couvrir l'apport et les frais de notaire (souvent 7 à 8 % dans l'ancien, 2 à 3 % dans le neuf). Associe ensuite un compte d'épargne à l'objectif « Apport immobilier ».</p>`}
+  </div>`;
+  const debtCards = S.debts.map(d=>{
+    const B = c.debts[d.id], P=+d.mensualite||0, r=+d.taux||0;
+    if(B==null) return `<div class="card"><h3>${esc(d.name)}</h3><p class="small muted" style="margin:6px 0 0">Renseigne le capital restant dû dans Saisie, sous « Soldes de fin de mois ».</p></div>`;
+    const n=nPay(B,r,P), end=isFinite(n)&&B>0?shiftKey(k,Math.ceil(n)):null;
+    const prog = d.initial>0 ? clamp(1-B/d.initial,0,1) : null;
+    let arb='';
+    if(r>0 && s.tauxLivret>0) arb = r>s.tauxLivret ? `<div class="alert info" style="margin:10px 0 0">Ce crédit coûte ${fmt1(r)} % contre ${fmt1(s.tauxLivret)} % de rendement net du livret : rembourser par anticipation rapporte plus qu'épargner, une fois ton fonds d'urgence de base constitué.</div>` : `<div class="alert info" style="margin:10px 0 0">Le livret (${fmt1(s.tauxLivret)} %) rapporte autant ou plus que le crédit (${fmt1(r)} %).</div>`;
+    return `<div class="card">
+      <div class="row"><h3>${esc(d.name)}</h3><b class="num">${eur(B)}</b></div>
+      ${prog!=null?`<div class="bar" style="margin:10px 0 6px"><i class="good" style="width:${prog*100}%"></i></div><div class="small muted">${Math.round(prog*100)} % remboursé sur ${eur(d.initial)}</div>`:`<p class="small muted" style="margin:6px 0 0">Ajoute le capital emprunté au départ dans Réglages pour voir la jauge.</p>`}
+      <p class="small muted" style="margin:8px 0 0">Mensualité ${eur(P)}${end?` · fin estimée ${monthLabel(end)}`:''}${r>0?` · intérêts restants ≈ ${eur(interestLeft(B,r,P))}`:' · taux non renseigné'}</p>
+      ${arb}
+    </div>`;
+  }).join('');
+  const withB = S.debts.filter(d=>c.debts[d.id]>0 && +d.mensualite>0);
+  const X=ui.simX;
+  const sim = withB.length ? `<div class="card"><h2>Et si je rembourse en avance ?</h2>
+    <div style="margin:10px 0"><label for="simX">Montant remboursé d'un coup (€)</label><input id="simX" inputmode="decimal" value="${X}" onchange="ui.simX=num(this.value);render()"></div>
+    ${withB.map(d=>{
+      const B=c.debts[d.id],P=+d.mensualite,r=+d.taux||0, B1=Math.max(0,B-X);
+      const n0=nPay(B,r,P), n1=nPay(B1,r,P);
+      if(!isFinite(n0)) return `<p class="small muted">${esc(d.name)} : mensualité trop basse pour amortir le capital, vérifie les chiffres.</p>`;
+      const i0=Math.max(0,n0*P-B), i1=B1>0?Math.max(0,n1*P-B1):0;
+      return `<div class="row small" style="padding:6px 0;border-top:1px solid var(--line)"><span>${esc(d.name)}</span><span class="num">${r>0?`−${Math.max(0,Math.round(n0-n1))} mois · ≈ ${eur(i0-i1)} d'intérêts en moins`:`−${Math.max(0,Math.round(n0-n1))} mois (taux à renseigner pour les intérêts)`}</span></div>`;
+    }).join('')}
+    <p class="small muted" style="margin:10px 0 0">Estimation avec mensualité inchangée. Vérifie dans ton contrat les éventuelles indemnités de remboursement anticipé.</p></div>` : '';
+  const e=c.endet;
+  const endetCard = `<div class="card"><div class="row"><h2>Taux d'endettement</h2><b class="num ${e!=null&&e>0.35?'bad':''}">${e!=null?Math.round(e*100)+' %':'—'}</b></div>
+    <div class="bar" style="margin:10px 0 6px"><i class="${e!=null&&e>0.35?'bad':''}" style="width:${e!=null?clamp(e/0.35,0,1)*100:0}%"></i></div>
+    <p class="small muted" style="margin:0">Mensualités de crédit (${eur(c.mens)}) ÷ revenus fixes du mois. Seuil bancaire usuel : 35 %, assurance incluse. Les banques pondèrent différemment les revenus variables et le congé maternité.</p></div>`;
+  return `${banner()}${topbar()}${apportCard}${debtCards}${sim}${endetCard}`;
+}
+
+/* ---------- Réglages ---------- */
+function setS(k,v){ S.settings[k] = k==='apportDate' ? v : num(v); save(); toast('Enregistré'); }
+function setB(id,v){ S.budgets[id]=num(v); save(); toast('Enregistré'); }
+function setAcc(id,f,v){ const a=S.accounts.find(x=>x.id===id); a[f]=v; save(); toast('Enregistré'); }
+function setDebt(id,f,v){ const d=S.debts.find(x=>x.id===id); d[f]= f==='name'?v:num(v); save(); toast('Enregistré'); }
+function addAcc(){ S.accounts.push({id:'a'+uid(),name:'Nouveau compte',goal:'libre'}); save(); render(); }
+function delAcc(id){ S.accounts=S.accounts.filter(a=>a.id!==id); save(); render(); }
+function addDebt(){ S.debts.push({id:'d'+uid(),name:'Nouveau crédit',mensualite:0,taux:0,initial:0}); save(); render(); }
+function delDebt(id){ S.debts=S.debts.filter(d=>d.id!==id); save(); render(); }
+function showBackup(){ $('#bk').value=JSON.stringify(S); $('#bk').select(); }
+function copyBackup(){
+  showBackup();
+  try{ navigator.clipboard.writeText($('#bk').value).then(()=>toast('Sauvegarde copiée')).catch(()=>{document.execCommand('copy');toast('Sauvegarde copiée');}); }
+  catch(e){ try{document.execCommand('copy');toast('Sauvegarde copiée');}catch(_){toast('Copie manuelle : sélectionne le texte');} }
+}
+function restoreBackup(){
+  try{
+    const o=JSON.parse($('#rs').value);
+    if(!o||!o.months||!o.settings) throw new Error();
+    const d=defaults(), ns=Object.assign(d,o,{settings:Object.assign(d.settings,o.settings),budgets:Object.assign(d.budgets,o.budgets||{})});
+    if(DB){ pushAll(ns); } else { S=ns; save(); }
+    render(); toast('Données restaurées');
+  }catch(e){ toast('Sauvegarde invalide'); }
+}
+function resetAll(){
+  if(!ui.reset){ ui.reset=true; render(); return; }
+  ui.reset=false;
+  if(DB){
+    txDocs.forEach(t=>enqueue(()=>DB.collection('tx').doc(t.id).delete()));
+    Object.keys(snapDocs).forEach(k=>enqueue(()=>DB.doc('snaps/'+k).delete()));
+    enqueue(()=>DB.doc('foyer/config').delete());
+    render(); toast('Effacement en cours…'); return;
+  }
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  S=defaults(); save(); render(); toast('Données effacées');
+}
+function settings(){
+  const s=S.settings;
+  const f=(l,k,v,help)=>`<div><label for="s_${k}">${l}</label><input id="s_${k}" inputmode="decimal" value="${v}" onchange="setS('${k}',this.value)">${help?`<div class="small muted" style="margin-top:4px">${help}</div>`:''}</div>`;
+  return `${banner()}<h1 style="font-size:22px;margin:4px 0 14px">Réglages</h1>
+  <div class="card"><h2 style="margin-bottom:12px">Objectifs</h2><div class="stack">
+    ${f('Dépenses mensuelles de référence du foyer (€)','depRef',s.depRef,'Sert à convertir ton épargne en mois de dépenses couverts.')}
+    ${f('Fonds d\'urgence : nombre de mois visé','urgenceMois',s.urgenceMois)}
+    ${f('Objectif d\'épargne mensuel (€)','epargneObj',s.epargneObj,'Base prudente : ce qui reste sans la part variable.')}
+    ${f('Cible d\'apport immobilier, frais de notaire inclus (€)','apportCible',s.apportCible)}
+    <div><label for="s_apportDate">Date visée pour l'achat</label><input id="s_apportDate" type="month" value="${s.apportDate||''}" onchange="setS('apportDate',this.value)"></div>
+    ${f('Rendement net de ton livret (% par an)','tauxLivret',s.tauxLivret,'À vérifier sur le site de ta banque. Sert à comparer avec le taux de tes crédits.')}
+  </div></div>
+  <div class="card"><h2 style="margin-bottom:12px">Budget mensuel par catégorie (€)</h2><div class="grid2">
+    ${CATS.map(c=>`<div><label for="b_${c.id}">${c.name}</label><input id="b_${c.id}" inputmode="decimal" value="${S.budgets[c.id]}" onchange="setB('${c.id}',this.value)"></div>`).join('')}
+  </div><p class="small muted" style="margin:10px 0 0">Budget à 0 : la catégorie est suivie sans alerte.</p></div>
+  <div class="card"><h2 style="margin-bottom:12px">Comptes d'épargne</h2><div class="stack">
+    ${S.accounts.map(a=>`<div class="edit" style="border:0;padding:0"><input value="${esc(a.name)}" aria-label="Nom du compte" onchange="setAcc('${a.id}','name',this.value)">
+      <div class="row"><select aria-label="Objectif du compte" onchange="setAcc('${a.id}','goal',this.value)">${Object.entries(GOALS).map(([g,n])=>`<option value="${g}" ${a.goal===g?'selected':''}>${n}</option>`).join('')}</select>
+      <button class="btn ghost sm" onclick="delAcc('${a.id}')">Retirer</button></div></div>`).join('')}
+    <button class="btn ghost block" onclick="addAcc()">Ajouter un compte</button>
+  </div></div>
+  <div class="card"><h2 style="margin-bottom:12px">Crédits</h2><div class="stack">
+    ${S.debts.map(d=>`<div class="edit" style="border:0;padding:0;border-bottom:1px solid var(--line);padding-bottom:12px"><input value="${esc(d.name)}" aria-label="Nom du crédit" onchange="setDebt('${d.id}','name',this.value)">
+      <div class="grid2"><div><label>Mensualité (€)</label><input inputmode="decimal" value="${d.mensualite}" onchange="setDebt('${d.id}','mensualite',this.value)"></div>
+      <div><label>Taux annuel (%)</label><input inputmode="decimal" value="${d.taux}" onchange="setDebt('${d.id}','taux',this.value)"></div></div>
+      <div><label>Capital emprunté au départ (€)</label><input inputmode="decimal" value="${d.initial}" onchange="setDebt('${d.id}','initial',this.value)"></div>
+      <button class="btn ghost sm" onclick="delDebt('${d.id}')">Retirer ce crédit</button></div>`).join('')}
+    <button class="btn ghost block" onclick="addDebt()">Ajouter un crédit</button>
+  </div></div>
+  ${mode==='db'?`<div class="card"><h2>Compte</h2><p class="small muted" style="margin:6px 0 12px">Connecté avec ${esc(userEmail)}. Seules les adresses e-mail listées dans les règles Firestore peuvent lire et écrire les données.</p><button class="btn ghost block" onclick="doSignOut()">Se déconnecter</button></div>`:''}
+  <div class="card"><h2>Sauvegarde</h2>
+    <p class="small muted" style="margin:4px 0 12px">${mode==='db'?"Tes données sont dans l'espace partagé du foyer. Une sauvegarde reste utile en cas de fausse manœuvre.":"Tes données restent sur cet appareil, dans ce navigateur. Copie une sauvegarde de temps en temps pour pouvoir tout retrouver ailleurs."}</p>
+    <div class="stack"><textarea id="bk" readonly placeholder="Ta sauvegarde apparaîtra ici"></textarea>
+    <button class="btn block" onclick="copyBackup()">Copier ma sauvegarde</button>
+    <textarea id="rs" placeholder="Colle ici une sauvegarde pour la restaurer"></textarea>
+    <button class="btn ghost block" onclick="restoreBackup()">Restaurer cette sauvegarde</button></div></div>
+  ${(mode==='db'&&!isOwner)?'':`<div class="card"><h2>Effacer les données</h2>
+    <button class="btn danger block" style="margin-top:10px" onclick="resetAll()">${ui.reset?'Confirmer : tout effacer définitivement':'Tout effacer'}</button></div>`}`;
+}
+
+/* ---------- Rendu principal ---------- */
+function render(opts){
+  pendingRender=false;
+  const keep={};
+  if(!(opts&&opts.clear)) ['f_amt','f_lab','f_cat','f_kind','csvText'].forEach(id=>{ const el=$('#'+id); if(el) keep[id]=el.value; });
+  const v=ui.tab; let html;
+  if(mode==='loading' || (mode==='db' && !ready)) html='<div class="empty" style="padding:70px 0">Chargement…</div>';
+  else if(mode==='login') html=centerCard('Mon patrimoine','Connecte-toi avec ton compte Google pour accéder aux comptes du foyer.','<button class="btn block" onclick="doSignIn()">Se connecter avec Google</button>');
+  else if(mode==='denied') html=centerCard('Accès refusé','Le compte '+esc(userEmail)+" n'est pas autorisé sur cet espace. Connecte-toi avec l'adresse e-mail prévue dans les règles Firestore.",'<button class="btn block" onclick="doSignOut()">Changer de compte</button>');
+  else if(mode==='error') html=centerCard('Connexion impossible',esc(fbErr));
+  else if(mode==='db' && !cfgDoc) html=setupView();
+  else html = v==='home'?home():v==='entry'?entry():v==='goals'?goals():settings();
+  $('#app').innerHTML = html;
+  Object.keys(keep).forEach(id=>{ const el=$('#'+id); if(el) el.value=keep[id]; });
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===v));
+}
+render();
+startDb();
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+/* ====== À REMPLACER : configuration de ton projet Firebase (voir GUIDE.md, étape 5) ====== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDfIb6nGrWFq243JhDlUEifX4J9xliq0wA",
+  authDomain: "family-budget-7380e.firebaseapp.com",
+  projectId: "family-budget-7380e",
+  appId: "1:881032194585:web:640defd8b089b3d0d4d888"
+};
+/* ========================================================================================= */
+
+try{
+  if(String(firebaseConfig.apiKey).startsWith("COLLE")) throw new Error("config");
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const fs = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+  const adapter = {
+    doc(path){
+      const ref = doc(fs, ...path.split('/'));
+      return {
+        set: d => setDoc(ref, d),
+        delete: () => deleteDoc(ref),
+        onSnapshot: (next, err) => onSnapshot(ref, sn => next({ exists: sn.exists(), id: sn.id, data: () => sn.data() }), err)
+      };
+    },
+    collection(path){
+      const ref = collection(fs, path);
+      return {
+        doc: id => { const r = doc(fs, path, id); return { set: d => setDoc(r, d), delete: () => deleteDoc(r) }; },
+        onSnapshot: (next, err) => onSnapshot(ref, sn => next({ docs: sn.docs.map(d => ({ id: d.id, data: () => d.data() })) }), err)
+      };
+    }
+  };
+  window.FB = {
+    onAuth: cb => onAuthStateChanged(auth, cb),
+    async signIn(){
+      const provider = new GoogleAuthProvider();
+      try{ await signInWithPopup(auth, provider); }
+      catch(e){
+        if(e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') await signInWithRedirect(auth, provider);
+        else throw e;
+      }
+    },
+    signOut: () => signOut(auth),
+    adapter
+  };
+}catch(e){
+  window.FB = null;
+  window.FBERR = e.message === 'config' ? 'config' : String(e.message);
+}
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+</body>
+</html>
