@@ -91,7 +91,7 @@ label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 .tx .a{font-weight:600;white-space:nowrap}
 .edit{padding:10px 0;border-top:1px solid var(--line);display:grid;gap:8px}
 .tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
-.tabs div{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs div{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
 .tabs button{font:inherit;font-size:12px;border:0;background:transparent;color:var(--muted);padding:9px 4px 8px;display:grid;justify-items:center;gap:3px;cursor:pointer}
 .tabs button.on{color:var(--accent);font-weight:600}
 .tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -105,8 +105,9 @@ label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 <body>
 <div class="wrap" id="app"></div>
 <nav class="tabs"><div>
-  <button data-t="home" onclick="go('home')"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Accueil</button>
-  <button data-t="entry" onclick="go('entry')"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Saisie</button>
+  <button data-t="home" onclick="go('home')"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Foyer</button>
+  <button data-t="papa" onclick="go('papa')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Papa</button>
+  <button data-t="maman" onclick="go('maman')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Maman</button>
   <button data-t="goals" onclick="go('goals')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Objectifs</button>
   <button data-t="settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Réglages</button>
 </div></nav>
@@ -217,7 +218,7 @@ function removeTx(k,id){
 }
 function putSnap(k){
   const m=getM(k);
-  if(DB){ const body=clean({balances:m.balances,debts:m.debts}); enqueue(()=>DB.doc('snaps/'+k).set(body)); }
+  if(DB){ const body=clean({balances:m.balances,debts:m.debts}); enqueue(()=>DB.doc('snaps/'+k).set(body,{merge:true})); }
 }
 function afterWrite(msg,clear){ if(!DB) save(); render({clear:!!clear}); if(msg) toast(msg); }
 function pushAll(src){
@@ -299,9 +300,10 @@ function netWorth(k){
   const bal = S.months[k].balances||{}; const d = snap('debts',k);
   return totalBal(bal) - S.debts.reduce((s,x)=>s+(+d[x.id]||0),0);
 }
-function calc(k){
+function calc(k,who){
   const m = getM(k);
-  const inc = m.tx.filter(t=>t.type==='in'), out = m.tx.filter(t=>t.type==='out');
+  const mine = t => !who || ownerOf(t)===who;
+  const inc = m.tx.filter(t=>t.type==='in'&&mine(t)), out = m.tx.filter(t=>t.type==='out'&&mine(t));
   const byCat = {}; out.forEach(t=>{ byCat[t.cat]=(byCat[t.cat]||0)+t.amount; });
   const bal = snap('balances',k), debts = snap('debts',k);
   const goalSum = g => S.accounts.filter(a=>a.goal===g).reduce((s,a)=>s+(+bal[a.id]||0),0);
@@ -360,7 +362,7 @@ function alerts(k,c){
     else if(b>0 && cat.flex && s>=0.9*b) a.push({l:'warn',t:`${cat.name} : ${Math.round(s/b*100)} % du budget déjà utilisé`});
   });
   if(c.rev>0 && k<curKey && c.reste < S.settings.epargneObj) a.push({l:'warn',t:`Reste du mois ${eur(c.reste)}, sous ton objectif d'épargne de ${eur(S.settings.epargneObj)}`});
-  if(k<=curKey && !hasOwnSnap(k)) a.push({l:'info',t:`Soldes de fin de mois non enregistrés : 1 minute dans l'onglet Saisie`});
+  if(k<=curKey && !hasOwnSnap(k)) a.push({l:'info',t:`Soldes de fin de mois non enregistrés : 1 minute, en bas de la page Foyer et de celles de Papa et Maman`});
   if(c.endet!=null && c.endet>0.35) a.push({l:'warn',t:`Taux d'endettement à ${Math.round(c.endet*100)} % : au-dessus du seuil bancaire usuel de 35 %`});
   return a;
 }
@@ -403,13 +405,13 @@ function home(){
   ${c.rev>0?`<p class="small muted" style="margin:-4px 4px 12px">Sans la part variable, le mois serait à <b class="num ${c.revFixe-c.dep>=0?'good':'bad'}">${eur(c.revFixe-c.dep)}</b>. Le variable est un bonus : le budget fixe doit tenir sans.</p>`:''}
   <div class="card">
     <h2 style="margin-bottom:6px">Budget du mois</h2>
-    ${catRows || `<div class="empty">Aucune dépense saisie ce mois-ci.<br><button class="btn sm" style="margin-top:10px" onclick="go('entry')">Saisir mon mois</button></div>`}
+    ${catRows || `<div class="empty">Aucune dépense saisie ce mois-ci.<br><button class="btn sm" style="margin-top:10px" onclick="go('papa')">Saisir mon mois</button></div>`}
   </div>
   <div class="card">
     <div class="row"><h2>Patrimoine net</h2><b class="num">${nw==null?'—':eur(nw)}</b></div>
     <p class="small muted" style="margin:4px 0 8px">Épargne moins crédits restants à rembourser.</p>
     ${chart()}
-  </div>`;
+  </div>${peopleCard(k)}`;
 }
 function chart(){
   const pts = Object.keys(S.months).filter(hasOwnSnap).sort().map(k=>({k,v:netWorth(k)}));
@@ -423,29 +425,58 @@ function chart(){
 }
 
 /* ---------- Saisie ---------- */
+const PEOPLE = {papa:'Papa', maman:'Maman'};
+const ownerOf = t => t.owner || (/conjointe|maman|femme/i.test(t.label||'') ? 'maman' : 'papa');
+const accOwner = a => a.owner || 'commun';
 function txRow(t){
   if(ui.edit===t.id){
     const sel = t.type==='out'
       ? `<select id="e_sel">${CATS.map(c=>`<option value="${c.id}" ${c.id===t.cat?'selected':''}>${c.name}</option>`).join('')}</select>`
       : `<select id="e_sel"><option value="fixe" ${t.kind!=='variable'?'selected':''}>Revenu fixe</option><option value="variable" ${t.kind==='variable'?'selected':''}>Revenu variable</option></select>`;
+    const own = `<select id="e_own">${Object.keys(PEOPLE).map(p=>`<option value="${p}" ${ownerOf(t)===p?'selected':''}>${PEOPLE[p]}</option>`).join('')}</select>`;
     return `<div class="edit">
       <input id="e_lab" value="${esc(t.label)}" aria-label="Libellé">
       <div class="grid2"><input id="e_amt" inputmode="decimal" value="${t.amount}" aria-label="Montant">${sel}</div>
+      <div><label for="e_own">Page</label>${own}</div>
       <div class="row"><button class="btn danger sm" onclick="delTx('${t.id}')">Supprimer</button><span><button class="btn ghost sm" onclick="ui.edit=null;render()">Annuler</button> <button class="btn sm" onclick="saveEdit('${t.id}')">Enregistrer</button></span></div>
     </div>`;
   }
   const sub = t.type==='out' ? catName(t.cat) : (t.kind==='variable'?'Variable':'Fixe');
   return `<div class="tx" onclick="ui.edit='${t.id}';render()"><div class="m"><b>${esc(t.label)}</b><span class="small muted">${sub}</span></div><span class="a num ${t.type==='in'?'good':''}">${t.type==='in'?'+':'−'}${eur(t.amount)}</span></div>`;
 }
-function entry(){
-  const k=ui.month, m=getM(k), c=calc(k);
-  const prevK = shiftKey(k,-1), prevHas = S.months[prevK] && S.months[prevK].tx && S.months[prevK].tx.length;
-  const bal = snap('balances',k), debts = snap('debts',k);
-  const ins = m.tx.filter(t=>t.type==='in'), outs = m.tx.filter(t=>t.type==='out');
-  const starters = m.tx.length ? '' : `<div class="card"><h3>Démarrer vite</h3><p class="small muted" style="margin:4px 0 12px">Pré-remplis le mois, puis ajuste seulement ce qui change.</p>
-    <div class="stack">${prevHas?`<button class="btn block" onclick="copyPrev()">Reprendre ${monthLabel(prevK)}</button>`:''}
-    <button class="btn ${prevHas?'ghost':''} block" onclick="applyTemplate()">Charger mes charges fixes habituelles</button></div></div>`;
+function soldesCard(owner){
+  const k=ui.month, bal=snap('balances',k), debts=snap('debts',k);
+  const accs=S.accounts.filter(a=>accOwner(a)===owner), dts=owner==='commun'?S.debts:[];
+  const who=owner==='commun'?'le foyer':PEOPLE[owner];
+  if(!accs.length && !dts.length) return `<div class="card"><h2>Soldes de fin de mois</h2><p class="small muted" style="margin:6px 0 0">Aucun compte rattaché à ${who}. Ajoutes-en dans Réglages, section Comptes d'épargne.</p></div>`;
+  return `<div class="card"><h2>Soldes de fin de mois</h2>
+    <p class="small muted" style="margin:4px 0 12px">${owner==='commun'?'Comptes communs et crédits. ':''}${hasOwnSnap(k)?'Soldes enregistrés pour ce mois.':'Pré-rempli avec les derniers soldes connus : corrige ce qui a changé.'}</p>
+    <div class="stack">
+      ${accs.map(a=>`<div><label for="bal_${a.id}">${esc(a.name)} <span class="small">(${GOALS[a.goal]})</span></label><input id="bal_${a.id}" inputmode="decimal" value="${bal[a.id]!=null?bal[a.id]:''}" placeholder="0"></div>`).join('')}
+      ${dts.map(d=>`<div><label for="debt_${d.id}">${esc(d.name)} : capital restant dû</label><input id="debt_${d.id}" inputmode="decimal" value="${debts[d.id]!=null?debts[d.id]:''}" placeholder="À renseigner"></div>`).join('')}
+      <button class="btn block" onclick="saveSoldes('${owner}')">Enregistrer les soldes</button>
+    </div></div>`;
+}
+function peopleCard(k){
+  const rows = Object.keys(PEOPLE).map(p=>{ const c=calc(k,p); return `<div class="row small" style="padding:8px 0;border-top:1px solid var(--line)"><b>${PEOPLE[p]}</b><span class="num">${eur(c.rev)} <span class="muted">entrés</span> · ${eur(c.dep)} <span class="muted">sortis</span> · <b class="${c.reste>=0?'good':'bad'}">${eur(c.reste)}</b></span></div>`; }).join('');
+  return `<div class="card"><h2 style="margin-bottom:6px">Par personne</h2>${rows}<p class="small muted" style="margin:8px 0 0">Chacun saisit sur sa page, le foyer additionne tout.</p></div>${soldesCard('commun')}`;
+}
+function entry(who){
+  const k=ui.month, m=getM(k), c=calc(k,who);
+  const mine=m.tx.filter(t=>ownerOf(t)===who);
+  const prevK=shiftKey(k,-1), prevHas=((S.months[prevK]||{}).tx||[]).some(t=>ownerOf(t)===who);
+  const ins=mine.filter(t=>t.type==='in'), outs=mine.filter(t=>t.type==='out');
+  const starters = mine.length ? '' : `<div class="card"><h3>Démarrer vite</h3><p class="small muted" style="margin:4px 0 12px">Pré-remplis le mois, puis ajuste seulement ce qui change.</p>
+    <div class="stack">${prevHas?`<button class="btn block" onclick="copyPrev('${who}')">Reprendre ${monthLabel(prevK)}</button>`:''}
+    <button class="btn ${prevHas?'ghost':''} block" onclick="applyTemplate('${who}')">${who==='papa'?'Charger salaire et charges fixes habituelles':'Charger mon congé maternité'}</button></div></div>`;
   return `${banner()}${topbar()}
+  <div class="row" style="margin:0 2px 12px"><h2 style="font-size:22px">Page de ${PEOPLE[who]}</h2><span class="small muted">Saisie personnelle</span></div>
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="kpi"><div class="l">Revenus</div><div class="v num">${eur(c.rev)}</div></div>
+    <div class="kpi"><div class="l">Dépenses</div><div class="v num">${eur(c.dep)}</div></div>
+    <div class="kpi"><div class="l">Reste du mois</div><div class="v num ${c.reste>=0?'good':'bad'}">${eur(c.reste)}</div></div>
+    <div class="kpi"><div class="l">Taux d'épargne</div><div class="v num">${c.rev>0?Math.round(c.reste/c.rev*100)+' %':'—'}</div></div>
+  </div>
   ${starters}
   <div class="card">
     <h2 style="margin-bottom:12px">Ajouter un mouvement</h2>
@@ -465,20 +496,12 @@ function entry(){
   <div class="card">
     <div class="row"><h2>Dépenses</h2><b class="num">${eur(c.dep)}</b></div>
     ${outs.length?outs.map(txRow).join(''):'<div class="empty small">Aucune dépense saisie.</div>'}
-    ${m.tx.length?'<p class="small muted" style="margin:8px 0 0">Touche une ligne pour la modifier ou la supprimer.</p>':''}
+    ${mine.length?'<p class="small muted" style="margin:8px 0 0">Touche une ligne pour la modifier, la supprimer ou la déplacer vers l\'autre page.</p>':''}
   </div>
-  <div class="card">
-    <h2>Soldes de fin de mois</h2>
-    <p class="small muted" style="margin:4px 0 12px">${hasOwnSnap(k)?'Soldes enregistrés pour ce mois.':'Pré-rempli avec les derniers soldes connus : corrige ce qui a changé.'}</p>
-    <div class="stack">
-      ${S.accounts.map(a=>`<div><label for="bal_${a.id}">${esc(a.name)} <span class="small">(${GOALS[a.goal]})</span></label><input id="bal_${a.id}" inputmode="decimal" value="${bal[a.id]!=null?bal[a.id]:''}" placeholder="0"></div>`).join('')}
-      ${S.debts.map(d=>`<div><label for="debt_${d.id}">${esc(d.name)} : capital restant dû</label><input id="debt_${d.id}" inputmode="decimal" value="${debts[d.id]!=null?debts[d.id]:''}" placeholder="À renseigner"></div>`).join('')}
-      <button class="btn block" onclick="saveSoldes()">Enregistrer les soldes</button>
-    </div>
-  </div>
+  ${soldesCard(who)}
   <div class="card">
     <h2>Importer un export bancaire (CSV)</h2>
-    <p class="small muted" style="margin:4px 0 12px">Colonnes reconnues : date, libellé, montant (ou débit / crédit). Les montants négatifs deviennent des dépenses. Retire d'abord les virements entre tes comptes. Les lignes déjà importées sont ignorées.</p>
+    <p class="small muted" style="margin:4px 0 12px">Colonnes reconnues : date, libellé, montant (ou débit / crédit). Les montants négatifs deviennent des dépenses. Retire d'abord les virements entre vos comptes. Les lignes déjà importées sont ignorées.</p>
     <div class="stack">
       <input type="file" id="csvFile" accept=".csv,.txt" onchange="readFile(this)">
       <textarea id="csvText" placeholder="Ou colle ici le contenu du CSV"></textarea>
@@ -495,8 +518,7 @@ function setType(t){
 function addTx(){
   const amt = num($('#f_amt').value);
   if(amt<=0){ toast('Entre un montant supérieur à 0'); return; }
-  const m = getM(ui.month);
-  const t = {id:uid(), type:ui.type, amount:amt, label:$('#f_lab').value.trim()};
+  const t = {id:uid(), type:ui.type, amount:amt, label:$('#f_lab').value.trim(), owner:ui.tab};
   if(ui.type==='out'){ t.cat=$('#f_cat').value; if(!t.label) t.label=catName(t.cat); }
   else { t.kind=$('#f_kind').value; if(!t.label) t.label = t.kind==='variable'?'Revenu variable':'Revenu fixe'; }
   putTx(ui.month,t); afterWrite('Ajouté',true);
@@ -504,27 +526,33 @@ function addTx(){
 function saveEdit(id){
   const t = getM(ui.month).tx.find(x=>x.id===id); if(!t) return;
   const a = num($('#e_amt').value); if(a<=0){ toast('Montant invalide'); return; }
-  t.amount=a; t.label=$('#e_lab').value.trim()||t.label;
+  t.amount=a; t.label=$('#e_lab').value.trim()||t.label; t.owner=$('#e_own').value;
   if(t.type==='out') t.cat=$('#e_sel').value; else t.kind=$('#e_sel').value;
   putTx(ui.month,t); ui.edit=null; afterWrite('Modifié');
 }
 function delTx(id){ removeTx(ui.month,id); ui.edit=null; afterWrite('Supprimé'); }
-function applyTemplate(){
+function applyTemplate(who){
   const k=ui.month;
-  TEMPLATE_IN.forEach(t=>putTx(k,{id:uid(),type:'in',...t}));
-  TEMPLATE_OUT.forEach(([label,amount,cat])=>putTx(k,{id:uid(),type:'out',label,amount,cat}));
-  afterWrite('Charges fixes chargées');
+  if(who==='maman'){
+    TEMPLATE_IN.slice(1).forEach(t=>putTx(k,{id:uid(),type:'in',owner:'maman',...t,label:'Congé maternité'}));
+  } else {
+    TEMPLATE_IN.slice(0,1).forEach(t=>putTx(k,{id:uid(),type:'in',owner:'papa',...t}));
+    TEMPLATE_OUT.forEach(([label,amount,cat])=>putTx(k,{id:uid(),type:'out',owner:'papa',label,amount,cat}));
+  }
+  afterWrite('Chargé');
 }
-function copyPrev(){
+function copyPrev(who){
   const p=getM(shiftKey(ui.month,-1));
-  p.tx.slice().forEach(t=>putTx(ui.month,{...t,id:uid(),ts:0}));
+  p.tx.filter(t=>ownerOf(t)===who).forEach(t=>putTx(ui.month,{...t,id:uid(),ts:0,owner:who}));
   afterWrite('Mois précédent repris');
 }
-function saveSoldes(){
-  const m=getM(ui.month);
-  S.accounts.forEach(a=>{ const el=$('#bal_'+a.id); if(el) m.balances[a.id]=num(el.value); });
-  S.debts.forEach(d=>{ const el=$('#debt_'+d.id); if(el && el.value.trim()!=='') m.debts[d.id]=num(el.value); });
-  putSnap(ui.month); afterWrite('Soldes enregistrés');
+function saveSoldes(owner){
+  const k=ui.month, m=getM(k), pb=snap('balances',k), pd=snap('debts',k);
+  S.accounts.forEach(a=>{ if(m.balances[a.id]==null && pb[a.id]!=null) m.balances[a.id]=pb[a.id]; });
+  S.debts.forEach(d=>{ if(m.debts[d.id]==null && pd[d.id]!=null) m.debts[d.id]=pd[d.id]; });
+  S.accounts.filter(a=>accOwner(a)===owner).forEach(a=>{ const el=$('#bal_'+a.id); if(el) m.balances[a.id]=num(el.value); });
+  if(owner==='commun') S.debts.forEach(d=>{ const el=$('#debt_'+d.id); if(el && el.value.trim()!=='') m.debts[d.id]=num(el.value); });
+  putSnap(k); afterWrite('Soldes enregistrés');
 }
 
 /* ---------- Import CSV ---------- */
@@ -568,7 +596,7 @@ function importCSV(){
     const m=getM(key);
     const type=amt<0?'out':'in', a=Math.abs(amt);
     if(m.tx.some(t=>t.type===type&&t.amount===a&&t.label===label&&t.date===date)){ skipped++; return; }
-    const t={id:uid(),type,amount:a,label,date};
+    const t={id:uid(),type,amount:a,label,date,owner:ui.tab};
     if(type==='out') t.cat=guessCat(label); else t.kind='fixe';
     putTx(key,t); added++;
   });
@@ -675,6 +703,7 @@ function settings(){
   </div><p class="small muted" style="margin:10px 0 0">Budget à 0 : la catégorie est suivie sans alerte.</p></div>
   <div class="card"><h2 style="margin-bottom:12px">Comptes d'épargne</h2><div class="stack">
     ${S.accounts.map(a=>`<div class="edit" style="border:0;padding:0"><input value="${esc(a.name)}" aria-label="Nom du compte" onchange="setAcc('${a.id}','name',this.value)">
+      <select aria-label="Propriétaire du compte" onchange="setAcc('${a.id}','owner',this.value)">${['commun','papa','maman'].map(o=>`<option value="${o}" ${accOwner(a)===o?'selected':''}>${o==='commun'?'Commun':PEOPLE[o]}</option>`).join('')}</select>
       <div class="row"><select aria-label="Objectif du compte" onchange="setAcc('${a.id}','goal',this.value)">${Object.entries(GOALS).map(([g,n])=>`<option value="${g}" ${a.goal===g?'selected':''}>${n}</option>`).join('')}</select>
       <button class="btn ghost sm" onclick="delAcc('${a.id}')">Retirer</button></div></div>`).join('')}
     <button class="btn ghost block" onclick="addAcc()">Ajouter un compte</button>
@@ -709,7 +738,7 @@ function render(opts){
   else if(mode==='denied') html=centerCard('Accès refusé','Le compte '+esc(userEmail)+" n'est pas autorisé sur cet espace. Connecte-toi avec l'adresse e-mail prévue dans les règles Firestore.",'<button class="btn block" onclick="doSignOut()">Changer de compte</button>');
   else if(mode==='error') html=centerCard('Connexion impossible',esc(fbErr));
   else if(mode==='db' && !cfgDoc) html=setupView();
-  else html = v==='home'?home():v==='entry'?entry():v==='goals'?goals():settings();
+  else html = v==='home'?home():(v==='papa'||v==='maman')?entry(v):v==='goals'?goals():settings();
   $('#app').innerHTML = html;
   Object.keys(keep).forEach(id=>{ const el=$('#'+id); if(el) el.value=keep[id]; });
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===v));
@@ -740,7 +769,7 @@ try{
     doc(path){
       const ref = doc(fs, ...path.split('/'));
       return {
-        set: d => setDoc(ref, d),
+        set: (d, o) => o ? setDoc(ref, d, o) : setDoc(ref, d),
         delete: () => deleteDoc(ref),
         onSnapshot: (next, err) => onSnapshot(ref, sn => next({ exists: sn.exists(), id: sn.id, data: () => sn.data() }), err)
       };
