@@ -81,7 +81,7 @@ h3{font-size:15px}
 input,select,textarea{font:inherit;font-size:16px;width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 textarea{min-height:90px;resize:vertical}
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
-.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--track);border-radius:12px;padding:3px;margin-bottom:12px}
+.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));background:var(--track);border-radius:12px;padding:3px;margin-bottom:12px}
 .seg button{font:inherit;font-weight:600;border:0;background:transparent;color:var(--muted);padding:10px;border-radius:10px;cursor:pointer}
 .seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .tx{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
@@ -106,9 +106,9 @@ label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 <div class="wrap" id="app"></div>
 <nav class="tabs"><div>
   <button data-t="home" onclick="go('home')"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Foyer</button>
+  <button data-t="commun" onclick="go('commun')"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Commun</button>
   <button data-t="papa" onclick="go('papa')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Papa</button>
   <button data-t="maman" onclick="go('maman')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Maman</button>
-  <button data-t="goals" onclick="go('goals')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Objectifs</button>
   <button data-t="settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Réglages</button>
 </div></nav>
 <div class="toast" id="toast"></div>
@@ -308,6 +308,7 @@ function calc(k,who){
   const bal = snap('balances',k), debts = snap('debts',k);
   const goalSum = g => S.accounts.filter(a=>a.goal===g).reduce((s,a)=>s+(+bal[a.id]||0),0);
   const rev = sum(inc), revFixe = sum(inc.filter(t=>t.kind!=='variable')), dep = sum(out);
+  const vir = sum(m.tx.filter(t=>t.type==='vir'&&(!who||who==='commun'||ownerOf(t)===who)));
   // épargne réelle = variation des soldes entre ce mois et le précédent relevé
   let saved = null;
   if(hasOwnSnap(k)){
@@ -316,7 +317,7 @@ function calc(k,who){
   }
   const mens = S.debts.reduce((s,d)=>s+(+d.mensualite||0),0);
   return {m,rev,revFixe,dep,byCat,bal,debts,urgence:goalSum('urgence'),apport:goalSum('apport'),saved,mens,
-          reste:rev-dep, endet: (revFixe||rev)>0 ? mens/(revFixe||rev) : null};
+          reste:(who==='commun'?rev+vir-dep:who?rev-dep-vir:rev-dep), vir, endet: (revFixe||rev)>0 ? mens/(revFixe||rev) : null};
 }
 
 /* ---------- Calculs de crédit ---------- */
@@ -362,7 +363,7 @@ function alerts(k,c){
     else if(b>0 && cat.flex && s>=0.9*b) a.push({l:'warn',t:`${cat.name} : ${Math.round(s/b*100)} % du budget déjà utilisé`});
   });
   if(c.rev>0 && k<curKey && c.reste < S.settings.epargneObj) a.push({l:'warn',t:`Reste du mois ${eur(c.reste)}, sous ton objectif d'épargne de ${eur(S.settings.epargneObj)}`});
-  if(k<=curKey && !hasOwnSnap(k)) a.push({l:'info',t:`Soldes de fin de mois non enregistrés : 1 minute, en bas de la page Foyer et de celles de Papa et Maman`});
+  if(k<=curKey && !hasOwnSnap(k)) a.push({l:'info',t:`Soldes de fin de mois non enregistrés : 1 minute, en bas des pages Commun, Papa et Maman`});
   if(c.endet!=null && c.endet>0.35) a.push({l:'warn',t:`Taux d'endettement à ${Math.round(c.endet*100)} % : au-dessus du seuil bancaire usuel de 35 %`});
   return a;
 }
@@ -384,7 +385,7 @@ function home(){
       ${b>0?`<div class="bar" style="margin-top:6px"><i class="${cls}" style="width:${clamp(p,0,1)*100}%"></i></div>`:''}</div>`;
   }).join('');
   const nw = S.months[k] && hasOwnSnap(k) ? netWorth(k) : null;
-  return `${banner()}${topbar()}
+  return `${banner()}${topbar()}${foyerSeg('home')}
   <div class="card hero">
     <h2>Fonds d'urgence</h2>
     <div class="row" style="align-items:flex-end;margin-top:12px">
@@ -426,28 +427,35 @@ function chart(){
 
 /* ---------- Saisie ---------- */
 const PEOPLE = {papa:'Papa', maman:'Maman'};
-const ownerOf = t => t.owner || (/conjointe|maman|femme/i.test(t.label||'') ? 'maman' : 'papa');
+const WALLETS = {commun:'Compte commun', papa:'Papa', maman:'Maman'};
+const COMMON_CATS = ['logement','factures','assurances','courses','transport','credits','abos'];
+const ownerOf = t => t.owner || (t.type==='out' ? 'commun' : (/conjointe|maman|femme/i.test(t.label||'') ? 'maman' : 'papa'));
 const accOwner = a => a.owner || 'commun';
 function txRow(t){
+  const onC = ui.tab==='commun';
   if(ui.edit===t.id){
     const sel = t.type==='out'
       ? `<select id="e_sel">${CATS.map(c=>`<option value="${c.id}" ${c.id===t.cat?'selected':''}>${c.name}</option>`).join('')}</select>`
-      : `<select id="e_sel"><option value="fixe" ${t.kind!=='variable'?'selected':''}>Revenu fixe</option><option value="variable" ${t.kind==='variable'?'selected':''}>Revenu variable</option></select>`;
-    const own = `<select id="e_own">${Object.keys(PEOPLE).map(p=>`<option value="${p}" ${ownerOf(t)===p?'selected':''}>${PEOPLE[p]}</option>`).join('')}</select>`;
+      : t.type==='in'
+      ? `<select id="e_sel"><option value="fixe" ${t.kind!=='variable'?'selected':''}>Revenu fixe</option><option value="variable" ${t.kind==='variable'?'selected':''}>Revenu variable</option></select>`
+      : '<div></div>';
+    const keys = t.type==='vir' ? Object.keys(PEOPLE) : Object.keys(WALLETS);
+    const own = `<select id="e_own">${keys.map(p=>`<option value="${p}" ${ownerOf(t)===p?'selected':''}>${WALLETS[p]}</option>`).join('')}</select>`;
     return `<div class="edit">
       <input id="e_lab" value="${esc(t.label)}" aria-label="Libellé">
       <div class="grid2"><input id="e_amt" inputmode="decimal" value="${t.amount}" aria-label="Montant">${sel}</div>
-      <div><label for="e_own">Page</label>${own}</div>
+      <div><label for="e_own">${t.type==='vir'?'Versé par':'Compte'}</label>${own}</div>
       <div class="row"><button class="btn danger sm" onclick="delTx('${t.id}')">Supprimer</button><span><button class="btn ghost sm" onclick="ui.edit=null;render()">Annuler</button> <button class="btn sm" onclick="saveEdit('${t.id}')">Enregistrer</button></span></div>
     </div>`;
   }
-  const sub = t.type==='out' ? catName(t.cat) : (t.kind==='variable'?'Variable':'Fixe');
-  return `<div class="tx" onclick="ui.edit='${t.id}';render()"><div class="m"><b>${esc(t.label)}</b><span class="small muted">${sub}</span></div><span class="a num ${t.type==='in'?'good':''}">${t.type==='in'?'+':'−'}${eur(t.amount)}</span></div>`;
+  const sub = t.type==='out' ? catName(t.cat) : t.type==='in' ? (t.kind==='variable'?'Variable':'Fixe') : (onC ? 'De '+WALLETS[ownerOf(t)] : 'Vers le compte commun');
+  const plus = t.type==='in' || (t.type==='vir' && onC);
+  return `<div class="tx" onclick="ui.edit='${t.id}';render()"><div class="m"><b>${esc(t.label)}</b><span class="small muted">${sub}</span></div><span class="a num ${plus?'good':''}">${plus?'+':'−'}${eur(t.amount)}</span></div>`;
 }
 function soldesCard(owner){
   const k=ui.month, bal=snap('balances',k), debts=snap('debts',k);
   const accs=S.accounts.filter(a=>accOwner(a)===owner), dts=owner==='commun'?S.debts:[];
-  const who=owner==='commun'?'le foyer':PEOPLE[owner];
+  const who=owner==='commun'?'le compte commun':PEOPLE[owner];
   if(!accs.length && !dts.length) return `<div class="card"><h2>Soldes de fin de mois</h2><p class="small muted" style="margin:6px 0 0">Aucun compte rattaché à ${who}. Ajoutes-en dans Réglages, section Comptes d'épargne.</p></div>`;
   return `<div class="card"><h2>Soldes de fin de mois</h2>
     <p class="small muted" style="margin:4px 0 12px">${owner==='commun'?'Comptes communs et crédits. ':''}${hasOwnSnap(k)?'Soldes enregistrés pour ce mois.':'Pré-rempli avec les derniers soldes connus : corrige ce qui a changé.'}</p>
@@ -457,51 +465,88 @@ function soldesCard(owner){
       <button class="btn block" onclick="saveSoldes('${owner}')">Enregistrer les soldes</button>
     </div></div>`;
 }
-function peopleCard(k){
-  const rows = Object.keys(PEOPLE).map(p=>{ const c=calc(k,p); return `<div class="row small" style="padding:8px 0;border-top:1px solid var(--line)"><b>${PEOPLE[p]}</b><span class="num">${eur(c.rev)} <span class="muted">entrés</span> · ${eur(c.dep)} <span class="muted">sortis</span> · <b class="${c.reste>=0?'good':'bad'}">${eur(c.reste)}</b></span></div>`; }).join('');
-  return `<div class="card"><h2 style="margin-bottom:6px">Par personne</h2>${rows}<p class="small muted" style="margin:8px 0 0">Chacun saisit sur sa page, le foyer additionne tout.</p></div>${soldesCard('commun')}`;
+function foyerSeg(active){
+  return `<div class="seg"><button class="${active==='home'?'on':''}" onclick="go('home')">Vue d'ensemble</button><button class="${active==='goals'?'on':''}" onclick="go('goals')">Objectifs</button></div>`;
 }
+function peopleCard(k){
+  const rows = ['commun','papa','maman'].map(w=>{
+    const c=calc(k,w);
+    const d = w==='commun' ? `${eur(c.vir+c.rev)} reçus · ${eur(c.dep)} payés` : `${eur(c.rev)} revenus · ${eur(c.vir)} au commun · ${eur(c.dep)} dépensés`;
+    return `<div style="padding:9px 0;border-top:1px solid var(--line)"><div class="row"><b>${WALLETS[w]}</b><b class="num ${c.reste>=0?'good':'bad'}">${eur(c.reste)}</b></div><div class="small muted num">${d}</div></div>`;
+  }).join('');
+  return `<div class="card"><h2 style="margin-bottom:6px">Par compte</h2>${rows}<p class="small muted" style="margin:8px 0 0">Chacun saisit sur sa page. Les versements vers le compte commun ne comptent ni en revenus ni en dépenses du foyer.</p></div>`;
+}
+function budgetCardFor(c){
+  const rows = CATS.filter(x=>budgetOf(x.id)>0 || (c.byCat[x.id]||0)>0).map(x=>{
+    const b=budgetOf(x.id), sp=c.byCat[x.id]||0, p=b>0?sp/b:0;
+    const cls = b>0 ? (sp>b?'bad':(x.flex&&p>=0.9?'warn':'')) : '';
+    return `<div class="cat"><div class="row"><span>${x.name}</span><span class="num ${cls}">${eur(sp)}${b>0?` <span class="muted small">/ ${eur(b)}</span>`:' <span class="muted small">non budgété</span>'}</span></div>${b>0?`<div class="bar" style="margin-top:6px"><i class="${cls}" style="width:${clamp(p,0,1)*100}%"></i></div>`:''}</div>`;
+  }).join('');
+  return `<div class="card"><h2 style="margin-bottom:6px">Charges du compte commun</h2>${rows||'<div class="empty small">Aucune charge saisie ce mois-ci.</div>'}</div>`;
+}
+function contribCard(k){
+  const cp=calc(k,'papa'), cm=calc(k,'maman'), s=S.settings;
+  const planned=CATS.reduce((t,c)=>t+budgetOf(c.id),0);
+  const rp=cp.revFixe||cp.rev, rm=cm.revFixe||cm.rev, tot=rp+rm;
+  const line=(name,done,plan)=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row"><span>${name}</span><span class="num">${eur(done)}${plan>0?` <span class="muted small">/ ${eur(plan)} prévus</span>`:''}</span></div>${plan>0?`<div class="bar" style="margin-top:6px"><i class="${done>=plan?'good':''}" style="width:${clamp(done/plan,0,1)*100}%"></i></div>`:''}</div>`;
+  const sug = tot>0 && planned>0 ? `<p class="small muted" style="margin:8px 0 0">Pour couvrir ${eur(planned)} de charges budgétées, au prorata des revenus fixes : Papa ≈ <b class="num">${eur(Math.round(planned*rp/tot))}</b>, Maman ≈ <b class="num">${eur(Math.round(planned*rm/tot))}</b>.</p>` : '';
+  return `<div class="card"><h2 style="margin-bottom:6px">Versements du mois</h2>${line('Papa',cp.vir,+s.contribPapa||0)}${line('Maman',cm.vir,+s.contribMaman||0)}${sug}</div>`;
+}
+function movableTx(){
+  const out=[];
+  Object.keys(S.months).forEach(k=>S.months[k].tx.forEach(t=>{ if(t.type==='out' && t.owner==='papa' && COMMON_CATS.includes(t.cat)) out.push([k,t]); }));
+  return out;
+}
+function moveCard(){
+  const n=movableTx().length; if(!n) return '';
+  return `<div class="card"><h3>Charges rattachées à Papa</h3><p class="small muted" style="margin:6px 0 12px">${n} dépenses de type charge fixe (loyer, crédits, courses…) sont sur la page de Papa. Les rattacher au compte commun ? Tu pourras en redéplacer une en touchant la ligne.</p><button class="btn block" onclick="moveFixed()">Déplacer vers le compte commun</button></div>`;
+}
+function moveFixed(){ movableTx().forEach(([k,t])=>{ t.owner='commun'; putTx(k,t); }); afterWrite('Déplacé vers le compte commun'); }
 function entry(who){
-  const k=ui.month, m=getM(k), c=calc(k,who);
+  const k=ui.month, m=getM(k), c=calc(k,who), isC=who==='commun';
   const mine=m.tx.filter(t=>ownerOf(t)===who);
-  const prevK=shiftKey(k,-1), prevHas=((S.months[prevK]||{}).tx||[]).some(t=>ownerOf(t)===who);
   const ins=mine.filter(t=>t.type==='in'), outs=mine.filter(t=>t.type==='out');
+  const virs=isC ? m.tx.filter(t=>t.type==='vir') : mine.filter(t=>t.type==='vir');
+  const prevK=shiftKey(k,-1), prevHas=((S.months[prevK]||{}).tx||[]).some(t=>ownerOf(t)===who);
+  const startLabel = who==='papa' ? 'Charger mon salaire' : who==='maman' ? 'Charger mon congé maternité' : 'Charger les charges fixes habituelles';
   const starters = mine.length ? '' : `<div class="card"><h3>Démarrer vite</h3><p class="small muted" style="margin:4px 0 12px">Pré-remplis le mois, puis ajuste seulement ce qui change.</p>
     <div class="stack">${prevHas?`<button class="btn block" onclick="copyPrev('${who}')">Reprendre ${monthLabel(prevK)}</button>`:''}
-    <button class="btn ${prevHas?'ghost':''} block" onclick="applyTemplate('${who}')">${who==='papa'?'Charger salaire et charges fixes habituelles':'Charger mon congé maternité'}</button></div></div>`;
+    <button class="btn ${prevHas?'ghost':''} block" onclick="applyTemplate('${who}')">${startLabel}</button></div></div>`;
+  const kpis = isC
+    ? `<div class="kpi"><div class="l">Versements reçus</div><div class="v num">${eur(c.vir)}</div></div>
+    <div class="kpi"><div class="l">Charges payées</div><div class="v num">${eur(c.dep)}</div></div>
+    <div class="kpi"><div class="l">Solde du mois</div><div class="v num ${c.reste>=0?'good':'bad'}">${eur(c.reste)}</div></div>
+    <div class="kpi"><div class="l">Couverture des charges</div><div class="v num">${c.dep>0?Math.round((c.vir+c.rev)/c.dep*100)+' %':'—'}</div></div>`
+    : `<div class="kpi"><div class="l">Revenus</div><div class="v num">${eur(c.rev)}</div></div>
+    <div class="kpi"><div class="l">Versé au commun</div><div class="v num">${eur(c.vir)}</div></div>
+    <div class="kpi"><div class="l">Dépenses perso</div><div class="v num">${eur(c.dep)}</div></div>
+    <div class="kpi"><div class="l">Reste du mois</div><div class="v num ${c.reste>=0?'good':'bad'}">${eur(c.reste)}</div></div>`;
+  const listCard=(title,list,total,cls,empty)=>`<div class="card"><div class="row"><h2>${title}</h2><b class="num ${cls}">${eur(total)}</b></div>${list.length?list.map(txRow).join(''):`<div class="empty small">${empty}</div>`}</div>`;
   return `${banner()}${topbar()}
-  <div class="row" style="margin:0 2px 12px"><h2 style="font-size:22px">Page de ${PEOPLE[who]}</h2><span class="small muted">Saisie personnelle</span></div>
-  <div class="grid2" style="margin-bottom:12px">
-    <div class="kpi"><div class="l">Revenus</div><div class="v num">${eur(c.rev)}</div></div>
-    <div class="kpi"><div class="l">Dépenses</div><div class="v num">${eur(c.dep)}</div></div>
-    <div class="kpi"><div class="l">Reste du mois</div><div class="v num ${c.reste>=0?'good':'bad'}">${eur(c.reste)}</div></div>
-    <div class="kpi"><div class="l">Taux d'épargne</div><div class="v num">${c.rev>0?Math.round(c.reste/c.rev*100)+' %':'—'}</div></div>
-  </div>
+  <div class="row" style="margin:0 2px 12px"><h2 style="font-size:22px">${isC?'Compte commun':'Page de '+PEOPLE[who]}</h2><span class="small muted">${isC?'Charges et versements':'Saisie personnelle'}</span></div>
+  <div class="grid2" style="margin-bottom:12px">${kpis}</div>
+  ${isC?contribCard(k)+budgetCardFor(c)+moveCard():''}
   ${starters}
   <div class="card">
     <h2 style="margin-bottom:12px">Ajouter un mouvement</h2>
-    <div class="seg"><button id="sOut" class="${ui.type==='out'?'on':''}" onclick="setType('out')">Dépense</button><button id="sIn" class="${ui.type==='in'?'on':''}" onclick="setType('in')">Revenu</button></div>
+    <div class="seg"><button id="sOut" class="${ui.type==='out'?'on':''}" onclick="setType('out')">Dépense</button><button id="sIn" class="${ui.type==='in'?'on':''}" onclick="setType('in')">Revenu</button><button id="sVir" class="${ui.type==='vir'?'on':''}" onclick="setType('vir')">${isC?'Versement':'Au commun'}</button></div>
     <div class="stack">
       <div><label for="f_amt">Montant (€)</label><input id="f_amt" inputmode="decimal" placeholder="0"></div>
       <div id="catWrap" style="display:${ui.type==='out'?'block':'none'}"><label for="f_cat">Catégorie</label><select id="f_cat">${CATS.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}</select></div>
       <div id="kindWrap" style="display:${ui.type==='in'?'block':'none'}"><label for="f_kind">Type de revenu</label><select id="f_kind"><option value="fixe">Fixe (salaire, indemnités)</option><option value="variable">Variable (prime, commissions)</option></select></div>
+      <div id="virWrap" style="display:${ui.type==='vir'?'block':'none'}">${isC?`<label for="f_from">Versé par</label><select id="f_from"><option value="papa">Papa</option><option value="maman">Maman</option></select>`:`<p class="small muted" style="margin:0">Argent que tu envoies sur le compte commun. Il n'est pas compté comme une dépense du foyer.</p>`}</div>
       <div><label for="f_lab">Libellé (facultatif)</label><input id="f_lab" placeholder="Ex. Courses Lidl"></div>
       <button class="btn block" onclick="addTx()">Ajouter</button>
     </div>
   </div>
-  <div class="card">
-    <div class="row"><h2>Revenus</h2><b class="num good">${eur(c.rev)}</b></div>
-    ${ins.length?ins.map(txRow).join(''):'<div class="empty small">Aucun revenu saisi.</div>'}
-  </div>
-  <div class="card">
-    <div class="row"><h2>Dépenses</h2><b class="num">${eur(c.dep)}</b></div>
-    ${outs.length?outs.map(txRow).join(''):'<div class="empty small">Aucune dépense saisie.</div>'}
-    ${mine.length?'<p class="small muted" style="margin:8px 0 0">Touche une ligne pour la modifier, la supprimer ou la déplacer vers l\'autre page.</p>':''}
-  </div>
+  ${isC&&!ins.length?'':listCard('Revenus',ins,c.rev,'good','Aucun revenu saisi.')}
+  ${listCard(isC?'Versements reçus':'Versé au compte commun',virs,c.vir,'','Aucun versement saisi.')}
+  ${listCard(isC?'Charges':'Dépenses perso',outs,c.dep,'','Aucune dépense saisie.')}
+  ${mine.length||virs.length?'<p class="small muted" style="margin:0 4px 12px">Touche une ligne pour la modifier, la supprimer ou la déplacer vers un autre compte.</p>':''}
   ${soldesCard(who)}
   <div class="card">
     <h2>Importer un export bancaire (CSV)</h2>
-    <p class="small muted" style="margin:4px 0 12px">Colonnes reconnues : date, libellé, montant (ou débit / crédit). Les montants négatifs deviennent des dépenses. Retire d'abord les virements entre vos comptes. Les lignes déjà importées sont ignorées.</p>
+    <p class="small muted" style="margin:4px 0 12px">Colonnes reconnues : date, libellé, montant (ou débit / crédit). Les montants négatifs deviennent des dépenses.${isC?' Les entrées sont ignorées : saisis les versements depuis la page de chacun.':' Retire d\'abord les virements vers le compte commun.'} Les lignes déjà importées sont ignorées.</p>
     <div class="stack">
       <input type="file" id="csvFile" accept=".csv,.txt" onchange="readFile(this)">
       <textarea id="csvText" placeholder="Ou colle ici le contenu du CSV"></textarea>
@@ -511,33 +556,37 @@ function entry(who){
 }
 function setType(t){
   ui.type=t;
-  $('#sOut').classList.toggle('on',t==='out'); $('#sIn').classList.toggle('on',t==='in');
+  [['sOut','out'],['sIn','in'],['sVir','vir']].forEach(([id,v])=>$('#'+id).classList.toggle('on',t===v));
   $('#catWrap').style.display = t==='out'?'block':'none';
   $('#kindWrap').style.display = t==='in'?'block':'none';
+  $('#virWrap').style.display = t==='vir'?'block':'none';
 }
 function addTx(){
   const amt = num($('#f_amt').value);
   if(amt<=0){ toast('Entre un montant supérieur à 0'); return; }
   const t = {id:uid(), type:ui.type, amount:amt, label:$('#f_lab').value.trim(), owner:ui.tab};
   if(ui.type==='out'){ t.cat=$('#f_cat').value; if(!t.label) t.label=catName(t.cat); }
-  else { t.kind=$('#f_kind').value; if(!t.label) t.label = t.kind==='variable'?'Revenu variable':'Revenu fixe'; }
+  else if(ui.type==='in'){ t.kind=$('#f_kind').value; if(!t.label) t.label = t.kind==='variable'?'Revenu variable':'Revenu fixe'; }
+  else { if(ui.tab==='commun') t.owner=$('#f_from').value; if(!t.label) t.label='Versement compte commun'; }
   putTx(ui.month,t); afterWrite('Ajouté',true);
 }
 function saveEdit(id){
   const t = getM(ui.month).tx.find(x=>x.id===id); if(!t) return;
   const a = num($('#e_amt').value); if(a<=0){ toast('Montant invalide'); return; }
   t.amount=a; t.label=$('#e_lab').value.trim()||t.label; t.owner=$('#e_own').value;
-  if(t.type==='out') t.cat=$('#e_sel').value; else t.kind=$('#e_sel').value;
+  if(t.type==='out') t.cat=$('#e_sel').value; else if(t.type==='in') t.kind=$('#e_sel').value;
   putTx(ui.month,t); ui.edit=null; afterWrite('Modifié');
 }
 function delTx(id){ removeTx(ui.month,id); ui.edit=null; afterWrite('Supprimé'); }
 function applyTemplate(who){
-  const k=ui.month;
-  if(who==='maman'){
-    TEMPLATE_IN.slice(1).forEach(t=>putTx(k,{id:uid(),type:'in',owner:'maman',...t,label:'Congé maternité'}));
+  const k=ui.month, s=S.settings;
+  if(who==='commun'){
+    TEMPLATE_OUT.forEach(([label,amount,cat])=>putTx(k,{id:uid(),type:'out',owner:'commun',label,amount,cat}));
   } else {
-    TEMPLATE_IN.slice(0,1).forEach(t=>putTx(k,{id:uid(),type:'in',owner:'papa',...t}));
-    TEMPLATE_OUT.forEach(([label,amount,cat])=>putTx(k,{id:uid(),type:'out',owner:'papa',label,amount,cat}));
+    const inc = who==='maman' ? TEMPLATE_IN.slice(1) : TEMPLATE_IN.slice(0,1);
+    inc.forEach(t=>putTx(k,{id:uid(),type:'in',owner:who,...t,label:who==='maman'?'Congé maternité':t.label}));
+    const c = +(who==='maman'?s.contribMaman:s.contribPapa)||0;
+    if(c>0) putTx(k,{id:uid(),type:'vir',owner:who,label:'Versement compte commun',amount:c});
   }
   afterWrite('Chargé');
 }
@@ -585,7 +634,7 @@ function importCSV(){
   const find=(...ks)=>head.findIndex(h=>ks.some(k=>h.includes(k)));
   const iD=find('date'), iL=find('libell','label','description','intitul','detail'), iM=find('montant','amount'), iDeb=find('debit'), iCre=find('credit');
   if(iL<0 || (iM<0 && iDeb<0 && iCre<0)){ toast('Colonnes libellé / montant introuvables'); return; }
-  let added=0, skipped=0;
+  let added=0, skipped=0, skippedIn=0;
   lines.slice(1).forEach(line=>{
     const r=split(line);
     let amt = iM>=0 ? parseAmount(r[iM]) : ((parseAmount(r[iCre])||0) - Math.abs(parseAmount(r[iDeb])||0));
@@ -595,12 +644,13 @@ function importCSV(){
     const key=parseDateKey(date)||ui.month;
     const m=getM(key);
     const type=amt<0?'out':'in', a=Math.abs(amt);
+    if(ui.tab==='commun' && type==='in'){ skippedIn++; return; }
     if(m.tx.some(t=>t.type===type&&t.amount===a&&t.label===label&&t.date===date)){ skipped++; return; }
     const t={id:uid(),type,amount:a,label,date,owner:ui.tab};
     if(type==='out') t.cat=guessCat(label); else t.kind='fixe';
     putTx(key,t); added++;
   });
-  afterWrite(`${added} lignes importées${skipped?`, ${skipped} déjà présentes`:''}`,true);
+  afterWrite(`${added} lignes importées${skipped?`, ${skipped} déjà présentes`:''}${skippedIn?`, ${skippedIn} entrées ignorées (versements à saisir depuis Papa ou Maman)`:''}`,true);
 }
 
 /* ---------- Objectifs ---------- */
@@ -647,7 +697,7 @@ function goals(){
   const endetCard = `<div class="card"><div class="row"><h2>Taux d'endettement</h2><b class="num ${e!=null&&e>0.35?'bad':''}">${e!=null?Math.round(e*100)+' %':'—'}</b></div>
     <div class="bar" style="margin:10px 0 6px"><i class="${e!=null&&e>0.35?'bad':''}" style="width:${e!=null?clamp(e/0.35,0,1)*100:0}%"></i></div>
     <p class="small muted" style="margin:0">Mensualités de crédit (${eur(c.mens)}) ÷ revenus fixes du mois. Seuil bancaire usuel : 35 %, assurance incluse. Les banques pondèrent différemment les revenus variables et le congé maternité.</p></div>`;
-  return `${banner()}${topbar()}${apportCard}${debtCards}${sim}${endetCard}`;
+  return `${banner()}${topbar()}${foyerSeg('goals')}${apportCard}${debtCards}${sim}${endetCard}`;
 }
 
 /* ---------- Réglages ---------- */
@@ -697,6 +747,8 @@ function settings(){
     ${f('Cible d\'apport immobilier, frais de notaire inclus (€)','apportCible',s.apportCible)}
     <div><label for="s_apportDate">Date visée pour l'achat</label><input id="s_apportDate" type="month" value="${s.apportDate||''}" onchange="setS('apportDate',this.value)"></div>
     ${f('Rendement net de ton livret (% par an)','tauxLivret',s.tauxLivret,'À vérifier sur le site de ta banque. Sert à comparer avec le taux de tes crédits.')}
+    ${f('Versement prévu de Papa au compte commun (€ par mois)','contribPapa',s.contribPapa||0)}
+    ${f('Versement prévu de Maman au compte commun (€ par mois)','contribMaman',s.contribMaman||0,'Sert à comparer le prévu et le réellement versé sur la page Commun.')}
   </div></div>
   <div class="card"><h2 style="margin-bottom:12px">Budget mensuel par catégorie (€)</h2><div class="grid2">
     ${CATS.map(c=>c.id==='credits' && budgetOf('credits')>0 ? `<div><label for="b_${c.id}">${c.name} (somme des mensualités)</label><input id="b_${c.id}" value="${budgetOf('credits')}" disabled></div>` : `<div><label for="b_${c.id}">${c.name}</label><input id="b_${c.id}" inputmode="decimal" value="${S.budgets[c.id]}" onchange="setB('${c.id}',this.value)"></div>`).join('')}
@@ -738,10 +790,10 @@ function render(opts){
   else if(mode==='denied') html=centerCard('Accès refusé','Le compte '+esc(userEmail)+" n'est pas autorisé sur cet espace. Connecte-toi avec l'adresse e-mail prévue dans les règles Firestore.",'<button class="btn block" onclick="doSignOut()">Changer de compte</button>');
   else if(mode==='error') html=centerCard('Connexion impossible',esc(fbErr));
   else if(mode==='db' && !cfgDoc) html=setupView();
-  else html = v==='home'?home():(v==='papa'||v==='maman')?entry(v):v==='goals'?goals():settings();
+  else html = v==='home'?home():(v==='commun'||v==='papa'||v==='maman')?entry(v):v==='goals'?goals():settings();
   $('#app').innerHTML = html;
   Object.keys(keep).forEach(id=>{ const el=$('#'+id); if(el) el.value=keep[id]; });
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===v));
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===(v==='goals'?'home':v)));
 }
 render();
 startDb();
