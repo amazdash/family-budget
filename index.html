@@ -345,13 +345,17 @@ function topbar(){
 function banner(){
   return writeErr ? `<div class="alert bad">Une écriture a été refusée. Vérifie ta connexion et que ton e-mail est autorisé.</div>` : '';
 }
+function budgetOf(id){
+  if(id==='credits'){ const m=S.debts.reduce((t,d)=>t+(+d.mensualite||0),0); if(m>0) return m; }
+  return +S.budgets[id]||0;
+}
 function catName(id){ const c=CATS.find(c=>c.id===id); return c?c.name:'Autres'; }
 
 /* ---------- Accueil ---------- */
 function alerts(k,c){
   const a = [];
   CATS.forEach(cat=>{
-    const b = +S.budgets[cat.id]||0, s = c.byCat[cat.id]||0;
+    const b = budgetOf(cat.id), s = c.byCat[cat.id]||0;
     if(b>0 && s>b) a.push({l:'bad',t:`${cat.name} : ${eur(s-b)} au-dessus du budget`});
     else if(b>0 && cat.flex && s>=0.9*b) a.push({l:'warn',t:`${cat.name} : ${Math.round(s/b*100)} % du budget déjà utilisé`});
   });
@@ -371,8 +375,8 @@ function home(){
   const nextTxt = next ? `Prochain palier : ${next} mois, il manque ${eur(next*s.depRef-c.urgence)}.` : `Fonds d'urgence complet. Bravo.`;
   const resteCls = c.reste>=s.epargneObj ? 'good' : c.reste>=0 ? 'warn' : 'bad';
   const al = alerts(k,c);
-  const catRows = CATS.filter(x=>(+S.budgets[x.id]||0)>0 || (c.byCat[x.id]||0)>0).map(x=>{
-    const b=+S.budgets[x.id]||0, sp=c.byCat[x.id]||0, p=b>0?sp/b:0;
+  const catRows = CATS.filter(x=>budgetOf(x.id)>0 || (c.byCat[x.id]||0)>0).map(x=>{
+    const b=budgetOf(x.id), sp=c.byCat[x.id]||0, p=b>0?sp/b:0;
     const cls = b>0 ? (sp>b?'bad':(x.flex&&p>=0.9?'warn':'')) : '';
     return `<div class="cat"><div class="row"><span>${x.name}</span><span class="num ${cls}">${eur(sp)}${b>0?` <span class="muted small">/ ${eur(b)}</span>`:' <span class="muted small">non budgété</span>'}</span></div>
       ${b>0?`<div class="bar" style="margin-top:6px"><i class="${cls}" style="width:${clamp(p,0,1)*100}%"></i></div>`:''}</div>`;
@@ -667,7 +671,7 @@ function settings(){
     ${f('Rendement net de ton livret (% par an)','tauxLivret',s.tauxLivret,'À vérifier sur le site de ta banque. Sert à comparer avec le taux de tes crédits.')}
   </div></div>
   <div class="card"><h2 style="margin-bottom:12px">Budget mensuel par catégorie (€)</h2><div class="grid2">
-    ${CATS.map(c=>`<div><label for="b_${c.id}">${c.name}</label><input id="b_${c.id}" inputmode="decimal" value="${S.budgets[c.id]}" onchange="setB('${c.id}',this.value)"></div>`).join('')}
+    ${CATS.map(c=>c.id==='credits' && budgetOf('credits')>0 ? `<div><label for="b_${c.id}">${c.name} (somme des mensualités)</label><input id="b_${c.id}" value="${budgetOf('credits')}" disabled></div>` : `<div><label for="b_${c.id}">${c.name}</label><input id="b_${c.id}" inputmode="decimal" value="${S.budgets[c.id]}" onchange="setB('${c.id}',this.value)"></div>`).join('')}
   </div><p class="small muted" style="margin:10px 0 0">Budget à 0 : la catégorie est suivie sans alerte.</p></div>
   <div class="card"><h2 style="margin-bottom:12px">Comptes d'épargne</h2><div class="stack">
     ${S.accounts.map(a=>`<div class="edit" style="border:0;padding:0"><input value="${esc(a.name)}" aria-label="Nom du compte" onchange="setAcc('${a.id}','name',this.value)">
